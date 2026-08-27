@@ -22,6 +22,14 @@
 | `51b6e8a` | บังคับติ๊กยอมรับ Policy ตอนสมัคร + เก็บ `policy_accepted_at`/`_version` |
 | `22d4489` | เพิ่ม `DEPLOYMENT_LOG.md` |
 | `1dffcb3` | แก้โลโก้ KhumPlan หายในหน้า auth บนมือถือ (จอ < 820px) |
+| `5c13ea7` | **QA รอบ Por — เครื่องคำนวณ/compliance**: การ์ดชีวิตตัวเลขบวกกันได้, อุบัติเหตุไม่นับใน priority/พีระมิด, เตือนเมื่อออมเกินกระแสเงินสด, การ์ดสุขภาพเป้าตรงกัน, ปีภาษี 2568→2569 + ปกส. 9,000→10,500, เอา SSF (ยกเลิกแล้ว) ออก, term life เลิกใช้คำ "เบี้ยจ่ายทิ้ง" |
+| `023f272` | **QA รอบ Por — ความปลอดภัย/PDPA/UI**: หน้าแชร่ลูกค้าไม่มีเมนูตัวแทน, slug 128-bit, security headers + favicon + OG, Terms เพิ่มข้อผู้ควบคุม–ผู้ประมวลผล + ปุ่มปิดบัญชี (migration 0003), "ลืมรหัสผ่าน" ไม่หลอกว่าส่งอีเมลแล้ว, topbar/ไอคอน dark mode/มือถือ |
+
+### ยังต้องทำ (จากรอบ QA)
+- **รัน `supabase/0003_qa_fixes.sql`** ใน Supabase SQL Editor (เพิ่มคอลัมน์ policy_accepted_*, ปุ่มปิดบัญชี, freeze consent)
+- ตั้ง **custom SMTP (Resend)** แล้วเปลี่ยน `EMAIL_ENABLED = true` ใน `src/ui/dom.js` + เปิด Confirm email
+- S15: เปลี่ยนช่องติดต่อจาก Gmail ส่วนตัว → `hello@khumplan.com` และเปลี่ยน QR พร้อมเพย์เป็นเลขบัญชีธนาคาร (ไม่ใช่เบอร์/บัตร ปชช.)
+- (polish) แปลง `public/og.svg` → `og.png` 1200×630 สำหรับพรีวิวลิงก์ที่สมบูรณ์
 
 ### GitHub
 - สร้าง repo `github.com/freitag21/khumplan` แล้ว push ทั้งหมด (branch `main`)
