@@ -19,8 +19,10 @@
 - ดีไซน์ Nocturne ใช้จริง: หน้าผล (ทิศทาง A) · ฟอร์ม stepper 6 ขั้น · MANHA · Landing · shell/routing
 - **Auth อีเมล + รหัสผ่าน** — สมัคร/เข้าสู่ระบบ/ลืมรหัสผ่าน/ตั้งรหัสใหม่ (`src/auth.js`, `renderAuth`)
 - **แดชบอร์ดตัวแทน** (`src/ui/dashboard.js`, `?view=dashboard`): รายการผลวิเคราะห์ (ค้นหา/เปิด/แก้ไข/ลบ) + สถิติรายเดือน + แก้โปรไฟล์ (ชื่อ/LINE/บริษัท/เลขใบอนุญาต) · เปิดผลเดิมมาแก้แล้วบันทึกทับ (`?edit=<id>`)
-- Supabase: schema + RLS, บันทึก + ลิงก์แชร์ (?a=slug) + migration `0002` (trigger เก็บ display_name)
-- เทสต์ engine 23 เคส (vitest) · `npm run build` ผ่าน · ตรวจใน Chrome ทุกหน้าไม่มี error
+- Supabase: schema + RLS, บันทึก + ลิงก์แชร์ (?a=slug) + migration `0002` (trigger เก็บ display_name) · **เชื่อมโปรเจคจริง + ทดสอบ end-to-end ผ่าน** (2026-08-28)
+- **Financial Pyramid** (จากทีมตัวแทน) — ปิรามิด 3 ชั้นในหน้าผล สีตาม coverage + marker "คุณอยู่ตรงนี้" (`src/lib/pyramid.js`, `src/ui/pyramid.js`)
+- **Dark mode** — palette มืด + ปุ่มสลับใน topbar + จำค่า localStorage + พิมพ์บังคับโหมดสว่าง
+- เทสต์ engine 26 เคส (vitest) · `npm run build` ผ่าน · ตรวจใน Chrome (light + dark) ไม่มี error
 
 ### รอบแก้ตามรีวิวของ Win (2026-08-28)
 **บั๊ก P0 แก้แล้ว:**
