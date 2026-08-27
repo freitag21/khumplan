@@ -9,8 +9,7 @@
 - Module A: ตัวแทนกรอกแบบสอบถามเอง
 - Stack: Vite vanilla + Supabase + **Vercel**
 - ดีไซน์: ระบบ "Nocturne" (light palette) จาก Claude Design — `design/DESIGN_NOTES.md`
-- ชื่อ: ยังไม่เคาะ — "KhumPlan" ชั่วคราว (`BRAND` ใน `src/ui/dom.js`)
-  · AgentMap: .com/.co/.xyz โดนนักเก็งกำไร, .app เป็นทูลตัวแทนอสังหาฯ AU/NZ · `.io`/`.pro` ยังว่าง
+- ชื่อ: **คุ้มแพลน / KhumPlan** (เคาะแล้ว) · โดเมน **khumplan.com** จดที่ Cloudflare Registrar · `BRAND` ใน `src/ui/dom.js`
 
 ## ทำเสร็จแล้ว
 

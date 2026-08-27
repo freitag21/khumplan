@@ -16,8 +16,8 @@ export async function getAgentProfile() {
   return data ?? { id: user.id, email: user.email, display_name: user.user_metadata?.display_name || '' };
 }
 
-/** เวอร์ชันของข้อกำหนด/นโยบายที่ตัวแทนยอมรับตอนสมัคร (อัปเดตเมื่อแก้เอกสาร) */
-export const POLICY_VERSION = '2026-08-27';
+/** เวอร์ชันของข้อกำหนด/นโยบายที่ตัวแทนยอมรับตอนสมัคร — พ.ศ. ISO · อัปเดตเมื่อแก้เอกสาร (ที่นี่ที่เดียว) */
+export const POLICY_VERSION = '2569-08-27';
 
 /** สมัครสมาชิกด้วยอีเมล + รหัสผ่าน — คืน { needsConfirm } */
 export async function signUp({ email, password, displayName }) {

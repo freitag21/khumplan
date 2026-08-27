@@ -399,6 +399,11 @@ select.input { appearance: none; background-image:
 .ref-pill span { font-size: 10.5px; color: rgba(234, 238, 245, 0.55); }
 .ref-pill b { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
 .summary-main .prio-cap { font-size: 11.5px; color: rgba(234, 238, 245, 0.55); margin: 15px 0 8px; letter-spacing: 0.02em; }
+.summary-feasible {
+  margin-top: 12px; padding: 8px 12px; border-radius: 8px;
+  background: rgba(224, 144, 42, 0.16); color: #f2c48a;
+  font-size: 11.5px; line-height: 1.55;
+}
 
 .strength-card {
   background: var(--ap-ok-s); border: 1px solid color-mix(in srgb, var(--ap-ok) 35%, transparent); border-radius: 12px;
@@ -470,6 +475,8 @@ select.input { appearance: none; background-image:
 .tax-big .v { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; }
 .tax-save .v { font-size: 22px; color: var(--ap-ok); }
 .tax-note { font-size: 10.5px; color: var(--ap-ink2); line-height: 1.5; margin-top: 10px; }
+ul.tax-note { margin: 10px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
+ul.tax-note li { margin: 0; }
 
 .result-actions { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
 
@@ -754,6 +761,12 @@ select.input { appearance: none; background-image:
   .form-body { padding: 20px; }
   .stepper .step .nm { display: none; }
   .stepper .step.active .nm { display: inline; }
+
+  /* topbar: ซ่อนเมนูกลาง เก็บแบรนด์ + ปุ่มบัญชี + สลับธีม, ให้ล้นแล้วเลื่อนได้แทนดันจอ */
+  .topbar { gap: 10px; padding: 10px 14px; overflow-x: auto; }
+  .topbar-nav { display: none; }
+  .topbar-user { max-width: 26vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .footer-links { gap: 6px 12px; }
 }
 
 /* ============================================================================
@@ -873,10 +886,11 @@ select.input { appearance: none; background-image:
   .rec-row { padding: 4pt 0; gap: 7pt; break-inside: avoid; }
   .rec-row .tag { font-size: 6.5pt; padding: 2pt 5pt; }
   .rec-row .rt { font-size: 8pt; }
-  .rec-row .rd { font-size: 6.5pt; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .rec-row .rd { font-size: 6.5pt; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
   .rec-row.in-budget { background: none; }
-  .rec-list .rec-row:nth-of-type(n+6) { display: none; }
-  .rec-list .hr:nth-of-type(n+5) { display: none; }
+  .rec-list .rec-row:nth-of-type(n+8) { display: none; }
+  .rec-list .hr:nth-of-type(n+7) { display: none; }
+  ul.tax-note { padding-left: 10pt; gap: 2pt; }
 
   .tax-card { padding: 8pt 10pt; border: 0.5pt solid var(--ap-line); break-inside: avoid; }
   .tax-card .kv { font-size: 7.5pt; padding: 2pt 0; }

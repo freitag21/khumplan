@@ -13,6 +13,12 @@ function rowFromInput(needsInput, summary) {
   };
 }
 
+/** slug ลิงก์แชร์ — url-safe ~22 ตัว (128-bit) เดา/ยิงสุ่มไม่ได้ */
+function newSlug() {
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 /**
  * บันทึกผลวิเคราะห์ใหม่ — คืน { id, slug }
  * ต้องยืนยันว่าได้รับความยินยอมจากลูกค้าแล้ว (consent) ก่อนบันทึก
@@ -23,13 +29,17 @@ export async function saveAnalysis(needsInput, summary, { consent = false } = {}
   const user = await getUser();
   if (!user) throw new Error('กรุณาเข้าสู่ระบบก่อนบันทึก');
 
-  const { data, error } = await supabase
-    .from('analyses')
-    .insert({ agent_id: user.id, slug: crypto.randomUUID().slice(0, 8), consent_confirmed: true, ...rowFromInput(needsInput, summary) })
-    .select('id, slug')
-    .single();
-  if (error) throw error;
-  return data;
+  const row = { agent_id: user.id, consent_confirmed: true, ...rowFromInput(needsInput, summary) };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { data, error } = await supabase
+      .from('analyses')
+      .insert({ ...row, slug: newSlug() })
+      .select('id, slug')
+      .single();
+    if (!error) return data;
+    if (error.code !== '23505') throw error; // 23505 = unique_violation (slug ชนกัน) → ลองใหม่
+  }
+  throw new Error('สร้างลิงก์แชร์ไม่สำเร็จ กรุณาลองอีกครั้ง');
 }
 
 /** แก้ไขผลวิเคราะห์ที่บันทึกไว้แล้ว (ของตัวแทนเอง — RLS คุ้มครอง) */
@@ -111,6 +121,13 @@ export async function updateAgentProfile(fields) {
   const { data, error } = await supabase.from('agents').upsert(patch).select('*').single();
   if (error) throw error;
   return data;
+}
+
+/** ปิดบัญชี — ลบบัญชีและข้อมูลผลวิเคราะห์ทั้งหมดของตัวแทนคนนี้ (ถาวร) */
+export async function deleteMyAccount() {
+  if (!hasSupabase) throw new Error('ยังไม่ได้ตั้งค่า Supabase');
+  const { error } = await supabase.rpc('delete_my_account');
+  if (error) throw error;
 }
 
 /** สถิติเดือนนี้ */

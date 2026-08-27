@@ -38,12 +38,12 @@ export function renderDashboard(opts = {}) {
           h('span', { class: 'n' }, Number.isFinite(score) ? score : '-')),
         h('span', { class: 'r muted date' }, a.created_at ? thDate(a.created_at) : '-'),
         h('div', { class: 'dr-actions' },
-          h('button', { class: 'icon-btn', title: 'เปิด', onclick: () => opts.onOpen?.(a.id) }, icon(ICONS.chevron, { size: 14, stroke: '#8f9aa8' })),
+          h('button', { class: 'icon-btn', title: 'เปิด', onclick: () => opts.onOpen?.(a.id) }, icon(ICONS.chevron, { size: 14, stroke: 'var(--ap-ink2)' })),
           h('button', { class: 'icon-btn', title: 'ลบ', onclick: async () => {
             if (!confirm(`ลบผลวิเคราะห์ของ "${a.client_name || 'ลูกค้า'}"?\nการลบเป็นการถาวร`)) return;
             try { await opts.onDelete?.(a.id); analyses = analyses.filter((x) => x.id !== a.id); renderRows(); }
             catch (e) { alert('ลบไม่สำเร็จ: ' + e.message); }
-          } }, icon('M4 8h8', { size: 14, stroke: '#d64545' })))));
+          } }, icon('M4 8h8', { size: 14, stroke: 'var(--ap-bad)' })))));
     });
   }
   renderRows();
@@ -95,13 +95,22 @@ export function renderDashboard(opts = {}) {
                 onclick: (e) => { e.preventDefault(); opts.onSupport?.(); } }, 'สนับสนุนโปรเจค'))
           : null,
         h('div', { class: 'card ap-g elev-sm' },
-          h('div', { style: 'font-size:13.5px;font-weight:600' }, 'โปรไฟล์ที่ลูกค้าเห็น'),
-          h('div', { class: 'muted', style: 'font-size:11.5px;margin-bottom:4px' }, 'แสดงบนหัวรายงานและหน้าแชร์'),
+          h('div', { style: 'font-size:13.5px;font-weight:600' }, 'โปรไฟล์ตัวแทน'),
+          h('div', { class: 'muted', style: 'font-size:11.5px;margin-bottom:4px' }, 'ชื่อ · LINE · เลขใบอนุญาต แสดงบนหัวรายงานและหน้าแชร์ (ไม่แสดงชื่อบริษัทประกันบนเอกสารลูกค้า)'),
           pfField('ชื่อ-นามสกุล', pf.display_name),
           pfField('LINE ID', pf.line_id),
-          pfField('บริษัท', pf.company),
+          pfField('บริษัทต้นสังกัด (สำหรับบันทึกของคุณเอง)', pf.company),
           pfField('เลขที่ใบอนุญาตตัวแทน', pf.license_no),
-          pfBtn, pfMsg))));
+          pfBtn, pfMsg,
+          opts.onDeleteAccount
+            ? h('div', { style: 'margin-top:14px;padding-top:12px;border-top:1px solid var(--ap-line)' },
+                h('a', { href: '#', style: 'font-size:12px;color:var(--ap-bad)', onclick: async (e) => {
+                  e.preventDefault();
+                  if (!confirm('ปิดบัญชีถาวร?\n\nระบบจะลบบัญชีนี้และผลวิเคราะห์ลูกค้าทั้งหมดของคุณ ลิงก์แชร์ทุกลิงก์จะหยุดทำงานทันที การกระทำนี้ย้อนกลับไม่ได้')) return;
+                  try { await opts.onDeleteAccount(); }
+                  catch (err) { alert('ปิดบัญชีไม่สำเร็จ: ' + err.message); }
+                } }, 'ปิดบัญชีและลบข้อมูลทั้งหมด'))
+            : null))));
 }
 
 function pfField(label, input) {

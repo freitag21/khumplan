@@ -37,14 +37,14 @@ git push -u origin main
    > anon key ปลอดภัยที่จะอยู่ใน bundle ฝั่ง browser — RLS เป็นตัวคุมสิทธิ์จริง
 4. **Deploy** — ได้ URL `khumplan.vercel.app`
 
-### 3. ต่อ Domain
+### 3. ต่อ Domain — **ทำไปแล้ว** (บันทึกไว้เผื่อทำใหม่)
 
-1. Vercel → Project → **Settings → Domains** → ใส่ `khumplan.com` (+ `www.khumplan.com`)
-2. Vercel จะบอกค่า DNS ที่ต้องตั้งที่ผู้ให้บริการโดเมน:
-   - `A` record `@` → `76.76.21.21`
-   - `CNAME` `www` → `cname.vercel-dns.com`
-   - (หรือย้าย nameserver ไปที่ Vercel เลยก็ได้)
-3. รอ DNS propagate (ไม่กี่นาที–ชั่วโมง) Vercel ออก SSL ให้อัตโนมัติ
+1. Vercel → Project → **Settings → Domains** → ใส่ `khumplan.com` (+ `www.khumplan.com` แบบ redirect → apex)
+2. Vercel จะบอกค่า DNS — ปัจจุบันแนะนำ **CNAME ที่ apex** (Cloudflare รองรับ CNAME flattening):
+   - `CNAME` `@`   → `4c70fa20e13fdda6.vercel-dns-017.com` · Proxy **DNS only (เมฆเทา)**
+   - `CNAME` `www` → `4c70fa20e13fdda6.vercel-dns-017.com` · Proxy **DNS only (เมฆเทา)**
+   - (ค่าเก่า `A @ 76.76.21.21` / `CNAME www cname.vercel-dns.com` ยังใช้ได้ แต่ Vercel เลิกแนะนำ)
+3. รอ DNS propagate (ไม่กี่นาที) Vercel ออก SSL ให้อัตโนมัติ
 
 ### 4. อัปเดต Supabase Auth URL
 

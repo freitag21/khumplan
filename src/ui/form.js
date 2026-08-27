@@ -223,7 +223,15 @@ export function buildForm({ onSubmit } = {}) {
       });
       if (f.type === 'number') input.addEventListener('change', refreshConditional);
     }
-    return { el: input, value: () => input.value, set: (v) => (input.value = v ?? '') };
+    return {
+      el: input,
+      value: () => input.value,
+      set: (v) => {
+        if (v == null || v === '') { input.value = ''; return; }
+        const raw = String(v).replace(/[^\d.-]/g, '');
+        input.value = money && raw !== '' && Number.isFinite(+raw) ? Number(raw).toLocaleString('th-TH') : String(v);
+      },
+    };
   }
 
   function overridePanel() {
@@ -266,7 +274,7 @@ function hintFor(id) {
 }
 function pdpaNote() {
   return h('div', { class: 'pdpa-note' },
-    icon('M8 2l5 2v4.2c0 2.6-2 4.6-5 5.8-3-1.2-5-3.2-5-5.8V4z', { size: 15, stroke: '#1550b8', width: 1.5, fill: 'none' }),
+    icon('M8 2l5 2v4.2c0 2.6-2 4.6-5 5.8-3-1.2-5-3.2-5-5.8V4z', { size: 15, stroke: 'var(--ap-pri-ink)', width: 1.5, fill: 'none' }),
     h('div', {}, 'ตามนโยบาย PDPA กรุณาแจ้งวัตถุประสงค์และขอความยินยอมจากลูกค้าก่อนบันทึกข้อมูลเข้าระบบ · ข้อมูลที่แชร์ให้ลูกค้าจะแสดงเฉพาะที่จำเป็นต่อการวางแผน'));
 }
 

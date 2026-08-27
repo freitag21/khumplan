@@ -11,7 +11,7 @@ import { hasSupabase } from './supabase.js';
 import { getAgentProfile, signUp, signIn, sendPasswordReset, updatePassword, signOut, onAuthChange } from './auth.js';
 import {
   saveAnalysis, updateAnalysis, deleteAnalysis, loadMyAnalysis, loadAnalysisBySlug,
-  listMyAnalyses, updateAgentProfile, monthStats,
+  listMyAnalyses, updateAgentProfile, monthStats, deleteMyAccount,
 } from './store.js';
 
 const root = document.getElementById('app');
@@ -58,11 +58,17 @@ function route() {
 
 /* ---------- shell ---------- */
 
-function mount(node, { bare = false } = {}) {
+function mount(node, { bare = false, client = false } = {}) {
   root.innerHTML = '';
-  if (!bare) root.append(topbar());
-  root.append(h('div', { class: 'page' }, node), footer());
-  if (bare) {
+  if (client) {
+    // หน้าที่ลูกค้าเห็น (ลิงก์แชร์) — ไม่มีเมนูตัวแทน, footer มีแค่บรรทัดกำกับ, ไม่มีลิงก์สนับสนุน/วิธีใช้
+    root.append(h('div', { class: 'page' }, node),
+      h('div', { class: 'footer ap-noprint' }, h('span', {}, `${BRAND} · ประมาณการเพื่อประกอบการวางแผน ไม่ใช่การเสนอขายกรมธรรม์`)));
+  } else {
+    if (!bare) root.append(topbar());
+    root.append(h('div', { class: 'page' }, node), footer());
+  }
+  if (bare || client) {
     const t = themeToggle();
     t.classList.add('theme-toggle-float');
     root.append(t);
@@ -83,10 +89,10 @@ function topbar() {
   }
   return h('div', { class: 'topbar' },
     h('a', { href: '?', style: 'text-decoration:none;color:inherit;display:contents', onclick: (e) => { e.preventDefault(); nav('?'); } }, brand(22)),
-    h('a', { class: 'topbar-link', href: '?view=quick', onclick: (e) => { e.preventDefault(); nav('?view=quick'); } }, 'คัดกรอง MANHA'),
-    h('a', { class: 'topbar-link', href: '?', onclick: (e) => { e.preventDefault(); nav('?'); } }, 'Protection Gap'),
-    h('a', { class: 'topbar-link', href: '?view=landing', onclick: (e) => { e.preventDefault(); nav('?view=landing'); } }, 'เกี่ยวกับ'),
-    h('a', { class: 'topbar-link', href: '?view=guide', onclick: (e) => { e.preventDefault(); nav('?view=guide'); } }, 'วิธีใช้'),
+    h('a', { class: 'topbar-link topbar-nav', href: '?view=quick', onclick: (e) => { e.preventDefault(); nav('?view=quick'); } }, 'คัดกรอง MANHA'),
+    h('a', { class: 'topbar-link topbar-nav', href: '?', onclick: (e) => { e.preventDefault(); nav('?'); } }, 'Protection Gap'),
+    h('a', { class: 'topbar-link topbar-nav', href: '?view=landing', onclick: (e) => { e.preventDefault(); nav('?view=landing'); } }, 'เกี่ยวกับ'),
+    h('a', { class: 'topbar-link topbar-nav', href: '?view=guide', onclick: (e) => { e.preventDefault(); nav('?view=guide'); } }, 'วิธีใช้'),
     ...right,
     themeToggle()
   );
@@ -138,6 +144,7 @@ async function showDashboard() {
     onDelete: (id) => deleteAnalysis(id),
     onSaveProfile: async (fields) => { agent = await updateAgentProfile(fields); },
     onSupport: () => nav('?view=support'),
+    onDeleteAccount: async () => { await deleteMyAccount(); await signOut(); alert('ปิดบัญชีเรียบร้อยแล้ว'); },
   });
   root.innerHTML = '';
   root.append(topbar(), h('div', { class: 'page' }, node), footer());
@@ -223,13 +230,13 @@ async function showEdit(id) {
 
 async function showShared(slug) {
   root.innerHTML = '';
-  root.append(topbar(), h('div', { class: 'page' }, h('p', { class: 'muted' }, 'กำลังโหลด…')), footer());
+  root.append(h('div', { class: 'page' }, h('p', { class: 'muted' }, 'กำลังโหลด…')));
   try {
     const row = await loadAnalysisBySlug(slug);
-    if (!row) return mount(h('p', { class: 'muted' }, 'ไม่พบผลวิเคราะห์นี้ หรือลิงก์หมดอายุแล้ว'));
-    mount(renderResults(analyze(row.input), { agent: row.agent || agent, readOnly: true }));
+    if (!row) return mount(h('p', { class: 'muted', style: 'text-align:center;margin:60px 0' }, 'ไม่พบผลวิเคราะห์นี้ หรือลิงก์หมดอายุแล้ว'), { client: true });
+    mount(renderResults(analyze(row.input), { agent: row.agent || agent, readOnly: true }), { client: true });
   } catch (e) {
-    mount(h('p', { class: 'muted' }, 'โหลดไม่สำเร็จ: ' + e.message));
+    mount(h('p', { class: 'muted' }, 'โหลดไม่สำเร็จ: ' + e.message), { client: true });
   }
 }
 

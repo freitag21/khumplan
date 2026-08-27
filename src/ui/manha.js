@@ -13,6 +13,7 @@ const TONE = { go: 'var(--ap-ok)', watch: 'var(--ap-warn)', stop: 'var(--ap-bad)
 export function renderManha(opts = {}) {
   const values = {};
   const resultSlot = h('div', {});
+  const evalHint = h('div', { class: 'step-intro', style: 'margin-top:8px' }, 'ตอบครบทั้ง 5 ข้อ (เงิน · อำนาจตัดสินใจ · ความจำเป็น · สุขภาพ · อายุ) เพื่อประเมิน');
   const evalBtn = h('button', { class: 'btn btn-primary ap-fill', disabled: true,
     onclick: () => {
       resultSlot.replaceChildren(readout(screenManha(values), opts, values));
@@ -23,8 +24,13 @@ export function renderManha(opts = {}) {
     oninput: (e) => { values.prospectName = e.target.value; } });
 
   function checkComplete() {
-    const ready = ['money', 'authority', 'need', 'health'].every((k) => values[k]) && Number(values.age) > 0;
-    evalBtn.disabled = !ready;
+    const missing = ['money', 'authority', 'need', 'health'].filter((k) => !values[k]);
+    if (!(Number(values.age) > 0)) missing.push('age');
+    evalBtn.disabled = missing.length > 0;
+    const names = { money: 'เงิน', authority: 'อำนาจตัดสินใจ', need: 'ความจำเป็น', health: 'สุขภาพ', age: 'อายุ' };
+    evalHint.textContent = missing.length
+      ? `ยังไม่ได้ตอบ: ${missing.map((k) => names[k]).join(' · ')}`
+      : 'ครบแล้ว — กด "ประเมิน MANHA" ได้เลย';
   }
 
   const manhaControls = MANHA_FIELDS.map((f) => control(f, checkComplete, values));
@@ -36,7 +42,7 @@ export function renderManha(opts = {}) {
       h('button', { class: 'btn btn-secondary', style: 'padding:6px 11px;font-size:12.5px', onclick: () => opts.onSkip?.() }, 'ข้ามไปกรอกเต็ม')),
     h('div', { class: 'form-body' },
       h('h1', {}, 'คัดกรองผู้มุ่งหวัง — MANHA'),
-      h('div', { class: 'step-intro' }, 'เช็คก่อนลงเวลานัดเต็ม — ระบบจะบอก "ขั้นถัดไปคืออะไร" ไม่ใช่ผ่าน/ไม่ผ่าน'),
+      h('div', { class: 'step-intro' }, 'เช็กก่อนลงเวลานัดเต็ม — ระบบจะบอก "ขั้นถัดไปคืออะไร" ไม่ใช่ผ่าน/ไม่ผ่าน'),
       h('div', { class: 'field ap-f', style: 'margin-bottom:14px;max-width:320px' }, h('label', {}, 'ชื่อผู้มุ่งหวัง'), nameInput),
       h('div', { class: 'field-grid' }, ...manhaControls),
 
@@ -46,11 +52,11 @@ export function renderManha(opts = {}) {
         h('div', { class: 'field-grid' }, ...leadControls)),
 
       h('div', { class: 'pdpa-note' },
-        icon('M8 2l5 2v4.2c0 2.6-2 4.6-5 5.8-3-1.2-5-3.2-5-5.8V4z', { size: 15, stroke: '#1550b8', width: 1.5, fill: 'none' }),
+        icon('M8 2l5 2v4.2c0 2.6-2 4.6-5 5.8-3-1.2-5-3.2-5-5.8V4z', { size: 15, stroke: 'var(--ap-pri-ink)', width: 1.5, fill: 'none' }),
         h('div', {}, 'ข้อมูลนี้อยู่ในเครื่องของคุณ ยังไม่ถูกบันทึกลงระบบ — บันทึกได้เมื่อได้รับความยินยอมจากผู้มุ่งหวังแล้ว (ข้อมูลสุขภาพเป็นข้อมูลอ่อนไหวตาม PDPA)')),
 
       h('hr', { class: 'hr', style: 'margin:22px -34px' }),
-      h('div', { class: 'form-nav' }, h('div', { class: 'spacer' }), evalBtn),
+      h('div', { class: 'form-nav', style: 'flex-direction:column;align-items:stretch;gap:6px' }, evalBtn, evalHint),
       resultSlot)
   );
 }

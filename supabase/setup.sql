@@ -1,6 +1,6 @@
 -- คุ้มแพลน (KhumPlan) — SQL ตั้งค่าครบในไฟล์เดียว
 -- วางทั้งหมดนี้ใน Supabase Dashboard → SQL Editor → Run
--- (รวม migration 0001 + 0002 · รันซ้ำได้ ปลอดภัย)
+-- (รวม migration 0001 + 0002 + 0003 · รันซ้ำได้ ปลอดภัย)
 
 -- ═══════════ ตาราง agents (โปรไฟล์ตัวแทน) ═══════════
 create table if not exists public.agents (
@@ -13,6 +13,10 @@ create table if not exists public.agents (
   created_at   timestamptz not null default now()
 );
 
+alter table public.agents
+  add column if not exists policy_accepted_at      timestamptz,
+  add column if not exists policy_accepted_version text;
+
 alter table public.agents enable row level security;
 
 drop policy if exists "agents read own" on public.agents;
@@ -22,19 +26,23 @@ create policy "agents read own"   on public.agents for select using (auth.uid() 
 create policy "agents upsert own" on public.agents for insert with check (auth.uid() = id);
 create policy "agents update own" on public.agents for update using (auth.uid() = id);
 
--- สร้างแถว agents อัตโนมัติเมื่อสมัคร + เก็บ display_name จาก metadata
+-- สร้างแถว agents อัตโนมัติเมื่อสมัคร + เก็บ display_name / หลักฐานการยอมรับนโยบาย จาก metadata
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  insert into public.agents (id, email, display_name)
+  insert into public.agents (id, email, display_name, policy_accepted_at, policy_accepted_version)
   values (
     new.id,
     new.email,
-    nullif(trim(coalesce(new.raw_user_meta_data->>'display_name', '')), '')
+    nullif(trim(coalesce(new.raw_user_meta_data->>'display_name', '')), ''),
+    (new.raw_user_meta_data->>'policy_accepted_at')::timestamptz,
+    nullif(new.raw_user_meta_data->>'policy_accepted_version', '')
   )
   on conflict (id) do update
     set email = excluded.email,
-        display_name = coalesce(public.agents.display_name, excluded.display_name);
+        display_name = coalesce(public.agents.display_name, excluded.display_name),
+        policy_accepted_at = coalesce(public.agents.policy_accepted_at, excluded.policy_accepted_at),
+        policy_accepted_version = coalesce(public.agents.policy_accepted_version, excluded.policy_accepted_version);
   return new;
 end;
 $$;
@@ -43,6 +51,21 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- ห้ามแก้หลักฐานการยอมรับนโยบายหลังบันทึกแล้ว
+create or replace function public.freeze_policy_consent()
+returns trigger language plpgsql as $$
+begin
+  if old.policy_accepted_at is not null then new.policy_accepted_at := old.policy_accepted_at; end if;
+  if old.policy_accepted_version is not null then new.policy_accepted_version := old.policy_accepted_version; end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists agents_freeze_consent on public.agents;
+create trigger agents_freeze_consent
+  before update on public.agents
+  for each row execute function public.freeze_policy_consent();
 
 -- ═══════════ ตาราง analyses (ผลวิเคราะห์) ═══════════
 create table if not exists public.analyses (
@@ -89,3 +112,14 @@ $$;
 
 revoke all on function public.get_shared_analysis(text) from public;
 grant execute on function public.get_shared_analysis(text) to anon, authenticated;
+
+-- ═══════════ ปิดบัญชี (ลบบัญชีตัวเอง + ข้อมูลที่เกี่ยวข้อง) ═══════════
+create or replace function public.delete_my_account()
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  delete from auth.users where id = auth.uid();
+end;
+$$;
+
+revoke all on function public.delete_my_account() from public;
+grant execute on function public.delete_my_account() to authenticated;

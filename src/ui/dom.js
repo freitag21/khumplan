@@ -17,6 +17,9 @@ export const SUPPORT = {
 export const hasSupport = () =>
   SUPPORT.enabled && (SUPPORT.qrImage || (SUPPORT.links && SUPPORT.links.length));
 
+/** ตั้ง true เมื่อเชื่อม custom SMTP (Resend) ใน Supabase แล้ว — เปิดฟีเจอร์ "ลืมรหัสผ่าน" / ยืนยันอีเมล */
+export const EMAIL_ENABLED = false;
+
 /**
  * ช่องทางติดต่อ — แก้ค่าตรงนี้ที่เดียว ช่องไหนเว้นว่าง (null) จะถูกซ่อน
  */
@@ -58,7 +61,7 @@ export function s(tag, attrs = {}, ...kids) {
   return el;
 }
 
-/** AgentPlan mark — rounded square + roof/house line */
+/** KhumPlan mark — rounded square + roof/house line */
 export function logoMark(size = 22) {
   const svg = s('svg', { width: size, height: size, viewBox: '0 0 26 26' });
   svg.append(
