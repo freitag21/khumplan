@@ -1,0 +1,24 @@
+{
+  "name": "agentplan",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "เครื่องมือสำหรับตัวแทนประกันชีวิต/สุขภาพ/สะสมทรัพย์ — Module A: วิเคราะห์ Protection Gap",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4"
+  },
+  "devDependencies": {
+    "vite": "^5.4.8",
+    "vitest": "^2.1.2"
+  },
+  "allowScripts": {
+    "esbuild@0.21.5": true
+  }
+}
