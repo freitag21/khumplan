@@ -1,12 +1,8 @@
--- คุ้มแพลน (KhumPlan) — Module A schema
--- รันใน Supabase SQL Editor (หรือ supabase db push)
---
--- หลักการความเป็นส่วนตัว:
---  - ตัวแทนแต่ละคนเห็นเฉพาะข้อมูลของตัวเอง (RLS)
---  - ข้อมูลลูกค้าดิบไม่แชร์ข้ามตัวแทน
---  - หน้าแชร์เข้าถึงผ่าน RPC ที่รับ slug เท่านั้น (ไม่เปิด select ทั้งตาราง) + ลิงก์มีวันหมดอายุ
+-- คุ้มแพลน (KhumPlan) — SQL ตั้งค่าครบในไฟล์เดียว
+-- วางทั้งหมดนี้ใน Supabase Dashboard → SQL Editor → Run
+-- (รวม migration 0001 + 0002 · รันซ้ำได้ ปลอดภัย)
 
--- ---------- โปรไฟล์ตัวแทน ----------
+-- ═══════════ ตาราง agents (โปรไฟล์ตัวแทน) ═══════════
 create table if not exists public.agents (
   id           uuid primary key references auth.users (id) on delete cascade,
   email        text,
@@ -26,11 +22,19 @@ create policy "agents read own"   on public.agents for select using (auth.uid() 
 create policy "agents upsert own" on public.agents for insert with check (auth.uid() = id);
 create policy "agents update own" on public.agents for update using (auth.uid() = id);
 
+-- สร้างแถว agents อัตโนมัติเมื่อสมัคร + เก็บ display_name จาก metadata
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  insert into public.agents (id, email) values (new.id, new.email)
-  on conflict (id) do nothing;
+  insert into public.agents (id, email, display_name)
+  values (
+    new.id,
+    new.email,
+    nullif(trim(coalesce(new.raw_user_meta_data->>'display_name', '')), '')
+  )
+  on conflict (id) do update
+    set email = excluded.email,
+        display_name = coalesce(public.agents.display_name, excluded.display_name);
   return new;
 end;
 $$;
@@ -40,7 +44,7 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- ---------- ผลวิเคราะห์ ----------
+-- ═══════════ ตาราง analyses (ผลวิเคราะห์) ═══════════
 create table if not exists public.analyses (
   id                uuid primary key default gen_random_uuid(),
   agent_id          uuid not null references public.agents (id) on delete cascade,
@@ -52,7 +56,7 @@ create table if not exists public.analyses (
   occupation        text,
   input             jsonb not null,
   summary           jsonb not null,
-  consent_confirmed boolean not null default false, -- ตัวแทนยืนยันว่าได้รับความยินยอมจากลูกค้าแล้ว
+  consent_confirmed boolean not null default false,
   share_enabled     boolean not null default true,
   expires_at        timestamptz not null default (now() + interval '90 days'),
   created_at        timestamptz not null default now()
@@ -63,32 +67,23 @@ create index if not exists analyses_slug_idx  on public.analyses (slug);
 
 alter table public.analyses enable row level security;
 
--- ตัวแทนจัดการเฉพาะของตัวเอง (select / insert / update / delete)
 drop policy if exists "analyses owner all" on public.analyses;
-drop policy if exists "analyses read by slug" on public.analyses; -- ลบ policy เดิมที่เปิด select ทั้งตาราง
+drop policy if exists "analyses read by slug" on public.analyses;
 create policy "analyses owner all" on public.analyses
   for all using (auth.uid() = agent_id) with check (auth.uid() = agent_id);
 
--- ---------- หน้าแชร์: อ่านผ่าน RPC ด้วย slug เท่านั้น ----------
--- คืนเฉพาะฟิลด์ที่จำเป็นต่อการแสดงผล + ชื่อ/LINE/ใบอนุญาตของตัวแทน (ตาม PDPA แสดงเท่าที่จำเป็น)
+-- ═══════════ หน้าแชร์: อ่านผ่าน RPC ด้วย slug เท่านั้น ═══════════
 create or replace function public.get_shared_analysis(p_slug text)
 returns table (
-  input        jsonb,
-  summary      jsonb,
-  client_name  text,
-  created_at   timestamptz,
-  agent_name   text,
-  agent_line   text,
-  agent_license text
+  input jsonb, summary jsonb, client_name text, created_at timestamptz,
+  agent_name text, agent_line text, agent_license text
 )
 language sql security definer stable set search_path = public as $$
   select a.input, a.summary, a.client_name, a.created_at,
          ag.display_name, ag.line_id, ag.license_no
   from public.analyses a
   join public.agents ag on ag.id = a.agent_id
-  where a.slug = p_slug
-    and a.share_enabled = true
-    and a.expires_at > now()
+  where a.slug = p_slug and a.share_enabled = true and a.expires_at > now()
   limit 1;
 $$;
 

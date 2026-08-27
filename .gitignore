@@ -7,3 +7,5 @@ dist/
 .vercel/
 .vite/
 coverage/
+supabase/.temp/
+supabase/.branches/
