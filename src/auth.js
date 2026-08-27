@@ -16,6 +16,9 @@ export async function getAgentProfile() {
   return data ?? { id: user.id, email: user.email, display_name: user.user_metadata?.display_name || '' };
 }
 
+/** เวอร์ชันของข้อกำหนด/นโยบายที่ตัวแทนยอมรับตอนสมัคร (อัปเดตเมื่อแก้เอกสาร) */
+export const POLICY_VERSION = '2026-08-27';
+
 /** สมัครสมาชิกด้วยอีเมล + รหัสผ่าน — คืน { needsConfirm } */
 export async function signUp({ email, password, displayName }) {
   if (!hasSupabase) throw new Error('ยังไม่ได้ตั้งค่า Supabase');
@@ -23,7 +26,11 @@ export async function signUp({ email, password, displayName }) {
     email,
     password,
     options: {
-      data: { display_name: displayName || '' },
+      data: {
+        display_name: displayName || '',
+        policy_accepted_version: POLICY_VERSION,
+        policy_accepted_at: new Date().toISOString(),
+      },
       emailRedirectTo: window.location.origin,
     },
   });

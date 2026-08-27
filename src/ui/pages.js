@@ -341,6 +341,14 @@ export function renderAuth(opts = {}) {
   const email = h('input', { class: 'input', type: 'email', placeholder: 'you@example.com', autocomplete: 'email', style: 'min-height:42px' });
   const pw = h('input', { class: 'input', type: 'password', placeholder: '••••••••', autocomplete: isSignup ? 'new-password' : 'current-password', style: 'min-height:42px' });
   const name = h('input', { class: 'input', placeholder: 'ชื่อที่จะแสดงบนรายงานให้ลูกค้าเห็น', style: 'min-height:42px' });
+  const consent = h('input', { type: 'checkbox' });
+  const consentRow = h('label', { class: 'auth-consent' },
+    consent,
+    h('span', {}, 'ฉันได้อ่านและยอมรับ ',
+      h('a', { href: '?view=terms', target: '_blank', rel: 'noopener' }, 'ข้อกำหนดการใช้งาน'),
+      ' และ ',
+      h('a', { href: '?view=privacy', target: '_blank', rel: 'noopener' }, 'นโยบายความเป็นส่วนตัว (PDPA)'),
+      ' — ในฐานะผู้ควบคุมข้อมูล ฉันจะแจ้งวัตถุประสงค์และขอความยินยอมจากลูกค้าก่อนบันทึกข้อมูลส่วนบุคคล'));
 
   const btn = h('button', { class: 'btn btn-primary ap-fill', 'data-label': isSignup ? 'สมัครสมาชิก' : 'เข้าสู่ระบบ',
     style: 'justify-content:center;margin-top:16px;min-height:42px;max-width:340px',
@@ -348,6 +356,7 @@ export function renderAuth(opts = {}) {
       const e2 = email.value.trim();
       if (!e2 || pw.value.length < 1) return setMsg('กรอกอีเมลและรหัสผ่าน');
       if (isSignup && pw.value.length < 6) return setMsg('รหัสผ่านอย่างน้อย 6 ตัวอักษร');
+      if (isSignup && !consent.checked) return setMsg('กรุณาติ๊กยอมรับข้อกำหนดและนโยบายความเป็นส่วนตัวก่อนสมัคร');
       busy(btn, true);
       try {
         if (isSignup) {
@@ -371,9 +380,10 @@ export function renderAuth(opts = {}) {
     isSignup ? field('ชื่อ-นามสกุล (ตัวแทน)', name) : null,
     field('อีเมล', email),
     field('รหัสผ่าน', pw),
+    isSignup ? consentRow : null,
     btn, msg,
     !isSignup ? h('div', { class: 'auth-switch' }, h('a', { href: '#', onclick: (e) => { e.preventDefault(); opts.onSwitch?.('reset'); } }, 'ลืมรหัสผ่าน?')) : null,
-    h('div', { class: 'auth-fine' }, 'การใช้งานถือว่ายอมรับ ', h('a', { href: '?view=terms' }, 'ข้อกำหนดการใช้งาน'), ' และ ', h('a', { href: '?view=privacy' }, 'นโยบายความเป็นส่วนตัว (PDPA)')),
+    !isSignup ? h('div', { class: 'auth-fine' }, 'การใช้งานถือว่ายอมรับ ', h('a', { href: '?view=terms' }, 'ข้อกำหนดการใช้งาน'), ' และ ', h('a', { href: '?view=privacy' }, 'นโยบายความเป็นส่วนตัว (PDPA)')) : null,
     h('hr', { class: 'hr', style: 'margin:22px 0 0;max-width:340px' }),
     h('div', { style: 'font-size:12.5px;color:var(--ap-ink2);margin-top:14px' },
       'กลับไปหน้าเครื่องมือ? ', h('a', { href: '#', onclick: (e) => { e.preventDefault(); opts.onBack?.(); } }, 'เริ่มวิเคราะห์')),
