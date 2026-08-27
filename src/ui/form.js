@@ -152,6 +152,13 @@ export function buildForm({ onSubmit } = {}) {
   function setValues(v) {
     for (const [k, ctl] of Object.entries(fieldEls)) if (v[k] != null) ctl.set(v[k]);
     if (Array.isArray(v.children)) { state.children = v.children.map((c) => ({ ...c })); renderChildren(); }
+    if (v.overrides && typeof v.overrides === 'object') {
+      for (const f of OVERRIDE_FIELDS) {
+        const raw = v.overrides[f.key];
+        const el = state.overrides[f.key];
+        if (el != null && Number.isFinite(raw)) el.value = f.kind === 'pct' ? +(raw * 100).toFixed(2) : raw;
+      }
+    }
     refreshConditional();
   }
   function loadSample() { setValues(SAMPLE); goto(0); }

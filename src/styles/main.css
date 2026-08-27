@@ -458,6 +458,49 @@ select.input { appearance: none; background-image:
 .auth-main .field, .auth-main .btn { max-width: 340px; }
 .auth-fine { font-size: 11.5px; color: var(--ap-ink2); margin-top: 14px; max-width: 340px; line-height: 1.6; }
 
+.auth-tabs { display: flex; gap: 4px; margin-bottom: 14px; background: var(--ap-bg); border-radius: 10px; padding: 4px; width: fit-content; }
+.auth-tab {
+  border: 0; background: transparent; cursor: pointer; font: inherit;
+  font-size: 13.5px; font-weight: 600; color: var(--ap-ink2);
+  padding: 7px 16px; border-radius: 7px;
+}
+.auth-tab.on { background: var(--ap-card); color: var(--ap-pri); box-shadow: var(--shadow-sm); }
+.auth-switch { font-size: 12.5px; margin-top: 12px; }
+.topbar-user { font-size: 13px; color: var(--ap-ink); font-weight: 500; }
+
+/* ============================================================================
+   Agent dashboard
+   ========================================================================== */
+
+.dashboard { }
+.dash-grid { display: grid; grid-template-columns: 1fr 280px; gap: 22px; align-items: start; }
+.dash-topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.dash-topbar h1 { font-size: 22px; }
+.dash-card { background: var(--ap-card); border: 1px solid var(--ap-line); border-radius: 11px; overflow: hidden; }
+.dash-empty { padding: 40px 20px; text-align: center; color: var(--ap-ink2); font-size: 13px; }
+
+.dash-row {
+  display: grid; grid-template-columns: 1fr 54px 118px 108px 56px;
+  gap: 12px; align-items: center; padding: 13px 16px;
+  border-bottom: 1px solid var(--ap-line);
+}
+.dash-row:last-child { border-bottom: none; }
+.dash-row .r { text-align: right; }
+.dash-head { font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ap-ink2); padding: 10px 16px; }
+.dr-name { cursor: pointer; min-width: 0; }
+.dr-name .nm { font-size: 13.5px; font-weight: 500; }
+.dr-name .sub { font-size: 11.5px; color: var(--ap-ink2); }
+.dash-row .date { font-size: 12px; color: var(--ap-ink2); }
+.dash-row .score { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.sbar { width: 48px; height: 6px; border-radius: 4px; background: var(--ap-track); overflow: hidden; }
+.sbar > div { height: 100%; border-radius: 4px; }
+.dr-actions { display: flex; gap: 2px; justify-content: flex-end; }
+.icon-btn { border: 0; background: transparent; cursor: pointer; padding: 6px; border-radius: 6px; display: grid; place-items: center; }
+.icon-btn:hover { background: color-mix(in srgb, var(--ap-ink) 7%, transparent); }
+
+.dash-side { display: flex; flex-direction: column; gap: 14px; }
+.side-kicker { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ap-ink2); }
+
 .landing { max-width: 900px; margin: 0 auto; }
 .landing-hero { padding: 52px 0 46px; display: grid; grid-template-columns: 1.15fr 1fr; gap: 34px; align-items: center; }
 .landing-hero h1 { font-size: 38px; line-height: 1.22; margin-top: 16px; text-wrap: pretty; }
@@ -491,6 +534,9 @@ select.input { appearance: none; background-image:
   .field-grid { grid-template-columns: 1fr; }
   .auth-card { grid-template-columns: 1fr; }
   .auth-aside { display: none; }
+  .dash-grid { grid-template-columns: 1fr; }
+  .dash-row { grid-template-columns: 1fr 70px 44px; }
+  .dash-row .date, .dash-head span:nth-child(3), .dash-head span:nth-child(4) { display: none; }
   .form-body { padding: 20px; }
   .stepper .step .nm { display: none; }
   .stepper .step.active .nm { display: inline; }

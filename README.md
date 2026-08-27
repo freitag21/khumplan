@@ -26,15 +26,19 @@ npm test         # รันชุดทดสอบ engine (vitest)
 npm run build    # สร้าง dist/ (Vercel: framework=vite, output=dist)
 ```
 
-แอปทำงานได้ทันทีแบบ **ออฟไลน์** (คำนวณในเบราว์เซอร์ ไม่ต้องมี backend)
-ระบบล็อกอิน + บันทึก + ลิงก์แชร์ จะทำงานเมื่อตั้งค่า Supabase
+แอปทำงานได้ทันทีแบบ **ออฟไลน์** (คำนวณ Protection Gap / MANHA ในเบราว์เซอร์)
+ระบบ **สมัคร/เข้าสู่ระบบ (อีเมล + รหัสผ่าน) + แดชบอร์ด + บันทึก + ลิงก์แชร์** จะทำงานเมื่อตั้งค่า Supabase
 
-## ตั้งค่า Supabase (ถ้าต้องการบันทึก/ล็อกอิน)
+## ตั้งค่า Supabase
 
 1. สร้างโปรเจคที่ https://supabase.com
-2. รัน `supabase/migrations/0001_init.sql` ใน SQL Editor
+2. SQL Editor → รัน `supabase/migrations/0001_init.sql` แล้ว `0002_password_auth.sql`
 3. คัดลอก `.env.example` เป็น `.env` แล้วใส่ `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
-4. เปิดใช้ Email OTP (magic link) ใน Authentication > Providers
+4. Authentication > Providers > **Email** — เปิด Email provider · เปิด "Confirm email" (แนะนำ) · ปิด Magic Link ได้
+5. Authentication > URL Configuration — ใส่ Site URL + Redirect URLs (รวม localhost ตอน dev)
+
+**สิ่งที่ตัวแทนทำได้เมื่อล็อกอิน:** ดูรายการผลวิเคราะห์ทั้งหมดของตัวเอง (ค้นหา / เปิด / แก้ไข / ลบ),
+แก้ไขโปรไฟล์ที่แสดงบนรายงาน (ชื่อ, LINE, เลขใบอนุญาต), ดูสถิติรายเดือน
 
 ## โครงสร้าง
 

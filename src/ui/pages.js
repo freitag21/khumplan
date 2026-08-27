@@ -1,39 +1,108 @@
 import { h, s, icon, brand, BRAND } from './dom.js';
 import { ringGauge } from './charts.js';
 
-/* ---------------- Login (magic link) ---------------- */
+/* ---------------- Auth (email + password) ---------------- */
 
-export function renderLogin({ onSubmit, onBack } = {}) {
-  const email = h('input', { class: 'input', type: 'email', placeholder: 'you@example.com', style: 'min-height:42px' });
-  const msg = h('div', { class: 'auth-fine', style: 'color:var(--ap-ok)' });
-  const card = h('div', { class: 'auth-card elev-md' },
-    h('div', { class: 'auth-aside' },
-      brand(22),
-      h('div', { class: 'grow' }),
-      h('h2', {}, 'สรุป Protection Gap', h('br'), 'ให้ลูกค้าเห็นภาพใน 5 วินาที'),
-      h('p', {}, 'กรอกข้อมูลจากบทสนทนา ระบบสรุปเป็นอินโฟกราฟิกพร้อมพิมพ์ PDF และแชร์ลิงก์ให้ลูกค้าได้ทันที'),
-      h('div', { class: 'rule' }),
-      h('div', { class: 'fine' }, 'เครื่องมือสำหรับตัวแทนประกันชีวิต สุขภาพ สะสมทรัพย์ และยูนิตลิงก์')
-    ),
-    h('div', { class: 'auth-main' },
-      h('h1', {}, 'เข้าสู่ระบบตัวแทน'),
-      h('div', { class: 'lede' }, 'กรอกอีเมลที่ใช้งาน เราจะส่งลิงก์เข้าสู่ระบบไปให้ — ไม่ต้องจำรหัสผ่าน'),
-      h('div', { class: 'field ap-f' }, h('label', {}, 'อีเมล'), email),
-      h('button', { class: 'btn btn-primary ap-fill', style: 'justify-content:center;margin-top:14px;min-height:42px',
-        onclick: async () => {
-          if (!email.value.trim()) return;
-          try { await onSubmit?.(email.value.trim()); msg.textContent = 'ส่งลิงก์เข้าสู่ระบบไปที่อีเมลแล้ว'; }
-          catch (e) { msg.style.color = 'var(--ap-bad)'; msg.textContent = 'ส่งไม่สำเร็จ: ' + e.message; }
-        } }, 'ส่งลิงก์เข้าสู่ระบบ'),
-      msg,
-      h('div', { class: 'auth-fine' }, 'ลิงก์ใช้ได้ 15 นาที · การเข้าใช้งานถือว่ายอมรับ ',
-        h('a', { href: '#' }, 'ข้อกำหนดการใช้งาน'), ' และ ', h('a', { href: '#' }, 'นโยบายความเป็นส่วนตัว')),
-      h('hr', { class: 'hr', style: 'margin:26px 0 0;max-width:340px' }),
-      h('div', { style: 'font-size:12.5px;color:var(--ap-ink2);margin-top:16px' },
-        'กลับไปหน้าเครื่องมือ? ', h('a', { href: '#', onclick: (e) => { e.preventDefault(); onBack?.(); } }, 'เริ่มวิเคราะห์'))
-    )
-  );
-  return card;
+const asideBlock = () => h('div', { class: 'auth-aside' },
+  brand(22),
+  h('div', { class: 'grow' }),
+  h('h2', {}, 'สรุป Protection Gap', h('br'), 'ให้ลูกค้าเห็นภาพใน 5 วินาที'),
+  h('p', {}, 'บันทึกผลวิเคราะห์ลูกค้าทุกคนไว้ที่เดียว เปิดดู/แก้ไข/แชร์ได้ทุกเมื่อ'),
+  h('div', { class: 'rule' }),
+  h('div', { class: 'fine' }, 'เครื่องมือสำหรับตัวแทนประกันชีวิต สุขภาพ สะสมทรัพย์ และยูนิตลิงก์'));
+
+const field = (label, input) => h('div', { class: 'field ap-f', style: 'max-width:340px' }, h('label', {}, label), input);
+
+/**
+ * @param {{mode:'signin'|'signup'|'reset'|'recover', onSignIn, onSignUp, onReset, onSetPassword, onSwitch, onBack}} opts
+ */
+export function renderAuth(opts = {}) {
+  const mode = opts.mode || 'signin';
+  const main = h('div', { class: 'auth-main' });
+  const msg = h('div', { class: 'auth-fine' });
+  const setMsg = (text, ok) => { msg.style.color = ok ? 'var(--ap-ok)' : 'var(--ap-bad)'; msg.textContent = text; };
+  const busy = (btn, on) => { btn.disabled = on; btn.textContent = on ? 'กำลังดำเนินการ…' : btn.dataset.label; };
+
+  if (mode === 'recover') {
+    const pw = h('input', { class: 'input', type: 'password', placeholder: 'รหัสผ่านใหม่', autocomplete: 'new-password', style: 'min-height:42px' });
+    const btn = h('button', { class: 'btn btn-primary ap-fill', 'data-label': 'บันทึกรหัสผ่านใหม่', style: 'justify-content:center;margin-top:14px;min-height:42px;max-width:340px',
+      onclick: async () => {
+        if (pw.value.length < 6) return setMsg('รหัสผ่านอย่างน้อย 6 ตัวอักษร');
+        busy(btn, true);
+        try { await opts.onSetPassword?.(pw.value); setMsg('เปลี่ยนรหัสผ่านแล้ว กำลังเข้าสู่ระบบ…', true); }
+        catch (e) { setMsg(e.message); busy(btn, false); }
+      } });
+    btn.textContent = btn.dataset.label;
+    main.append(h('h1', {}, 'ตั้งรหัสผ่านใหม่'), h('div', { class: 'lede' }, 'กรอกรหัสผ่านใหม่ที่ต้องการใช้'), field('รหัสผ่านใหม่', pw), btn, msg);
+    return h('div', { class: 'auth-card elev-md' }, asideBlock(), main);
+  }
+
+  if (mode === 'reset') {
+    const email = h('input', { class: 'input', type: 'email', placeholder: 'you@example.com', autocomplete: 'email', style: 'min-height:42px' });
+    const btn = h('button', { class: 'btn btn-primary ap-fill', 'data-label': 'ส่งลิงก์รีเซ็ตรหัสผ่าน', style: 'justify-content:center;margin-top:14px;min-height:42px;max-width:340px',
+      onclick: async () => {
+        if (!email.value.trim()) return;
+        busy(btn, true);
+        try { await opts.onReset?.(email.value.trim()); setMsg('ส่งลิงก์รีเซ็ตรหัสผ่านไปที่อีเมลแล้ว', true); }
+        catch (e) { setMsg(e.message); }
+        busy(btn, false);
+      } });
+    btn.textContent = btn.dataset.label;
+    main.append(
+      h('h1', {}, 'ลืมรหัสผ่าน'),
+      h('div', { class: 'lede' }, 'กรอกอีเมล เราจะส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ไปให้'),
+      field('อีเมล', email), btn, msg,
+      h('div', { class: 'auth-switch' }, h('a', { href: '#', onclick: (e) => { e.preventDefault(); opts.onSwitch?.('signin'); } }, '← กลับไปเข้าสู่ระบบ')));
+    return h('div', { class: 'auth-card elev-md' }, asideBlock(), main);
+  }
+
+  // signin / signup
+  const isSignup = mode === 'signup';
+  const email = h('input', { class: 'input', type: 'email', placeholder: 'you@example.com', autocomplete: 'email', style: 'min-height:42px' });
+  const pw = h('input', { class: 'input', type: 'password', placeholder: '••••••••', autocomplete: isSignup ? 'new-password' : 'current-password', style: 'min-height:42px' });
+  const name = h('input', { class: 'input', placeholder: 'ชื่อที่จะแสดงบนรายงานให้ลูกค้าเห็น', style: 'min-height:42px' });
+
+  const btn = h('button', { class: 'btn btn-primary ap-fill', 'data-label': isSignup ? 'สมัครสมาชิก' : 'เข้าสู่ระบบ',
+    style: 'justify-content:center;margin-top:16px;min-height:42px;max-width:340px',
+    onclick: async () => {
+      const e2 = email.value.trim();
+      if (!e2 || pw.value.length < 1) return setMsg('กรอกอีเมลและรหัสผ่าน');
+      if (isSignup && pw.value.length < 6) return setMsg('รหัสผ่านอย่างน้อย 6 ตัวอักษร');
+      busy(btn, true);
+      try {
+        if (isSignup) {
+          const { needsConfirm } = await opts.onSignUp?.({ email: e2, password: pw.value, displayName: name.value.trim() }) || {};
+          if (needsConfirm) setMsg('สมัครแล้ว — กรุณายืนยันอีเมลจากลิงก์ที่ส่งไป แล้วเข้าสู่ระบบ', true);
+          else setMsg('สมัครสำเร็จ กำลังเข้าสู่ระบบ…', true);
+        } else {
+          await opts.onSignIn?.({ email: e2, password: pw.value });
+        }
+      } catch (e) { setMsg(e.message); busy(btn, false); }
+    } });
+  btn.textContent = btn.dataset.label;
+
+  const tabs = h('div', { class: 'auth-tabs' },
+    tab('เข้าสู่ระบบ', !isSignup, () => opts.onSwitch?.('signin')),
+    tab('สมัครสมาชิก', isSignup, () => opts.onSwitch?.('signup')));
+
+  [
+    tabs,
+    h('div', { class: 'lede' }, isSignup ? 'สมัครฟรีด้วยอีเมลและรหัสผ่าน' : 'เข้าสู่ระบบเพื่อดูและแก้ไขข้อมูลลูกค้าของคุณ'),
+    isSignup ? field('ชื่อ-นามสกุล (ตัวแทน)', name) : null,
+    field('อีเมล', email),
+    field('รหัสผ่าน', pw),
+    btn, msg,
+    !isSignup ? h('div', { class: 'auth-switch' }, h('a', { href: '#', onclick: (e) => { e.preventDefault(); opts.onSwitch?.('reset'); } }, 'ลืมรหัสผ่าน?')) : null,
+    h('div', { class: 'auth-fine' }, 'การใช้งานถือว่ายอมรับ ', h('a', { href: '#' }, 'ข้อกำหนดการใช้งาน'), ' และ ', h('a', { href: '#' }, 'นโยบายความเป็นส่วนตัว (PDPA)')),
+    h('hr', { class: 'hr', style: 'margin:22px 0 0;max-width:340px' }),
+    h('div', { style: 'font-size:12.5px;color:var(--ap-ink2);margin-top:14px' },
+      'กลับไปหน้าเครื่องมือ? ', h('a', { href: '#', onclick: (e) => { e.preventDefault(); opts.onBack?.(); } }, 'เริ่มวิเคราะห์')),
+  ].filter(Boolean).forEach((n) => main.append(n));
+  return h('div', { class: 'auth-card elev-md' }, asideBlock(), main);
+}
+
+function tab(label, active, onClick) {
+  return h('button', { class: 'auth-tab' + (active ? ' on' : ''), onclick: onClick }, label);
 }
 
 /* ---------------- Landing ---------------- */
