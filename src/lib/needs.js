@@ -117,13 +117,14 @@ export function analyzeLife(input) {
   const notes = [];
   if (!dep) notes.push('ยังไม่มีผู้อยู่ในอุปการะ — ทุนที่ควรมีครอบคลุมเฉพาะหนี้สินและค่าใช้จ่ายช่วงสุดท้าย');
   else notes.push(`ทดแทนรายได้ที่ครอบครัวต้องพึ่งพา ${pct(consumF)}% เป็นเวลา ${years} ปี (คิดลดด้วยผลตอบแทนที่แท้จริง) + หนี้สิน + ค่าใช้จ่ายช่วงสุดท้าย`);
+  notes.push(`"มีอยู่" = ทุนประกันชีวิต ${bn(personalLife + groupLife)}` + (usableLiquid > 0 ? ` + สินทรัพย์สภาพคล่องที่นำมาชำระได้ ${bn(usableLiquid)} (หลังกันเงินสำรองฉุกเฉิน ${LIFE.emergencyFundMonths} เดือน)` : ''));
   if (groupLife > 0) notes.push(`รวมทุนกลุ่มจากที่ทำงาน ${bn(groupLife)} บาท ซึ่ง "คุ้มครองเฉพาะระหว่างเป็นพนักงาน" — ถ้าออกจากงานวันนี้ ช่องว่างจะเป็น ${bn(gapIfLeaveJob)} บาท`);
   if (capped) notes.push(`จำกัดทุนไว้ที่ ${LIFE.capMultipleOfAnnualIncome} เท่าของรายได้ต่อปี + หนี้`);
 
   return {
     key: 'life',
     label: dep ? 'ประกันชีวิต / คุ้มครองรายได้' : 'ประกันชีวิต / คุ้มครองหนี้สิน',
-    have: personalLife + groupLife,
+    have: Math.round(available), // ทุนประกัน + สภาพคล่องที่ใช้ได้ → have + gap = need
     need: Math.round(need),
     gap: Math.round(gap),
     severity: severityFromGap(gap, need),
@@ -151,6 +152,7 @@ export function analyzeHealth(input) {
   let annual = Math.max(n(input.existingHealthAnnual), n(input.groupHealthAnnual));
   if (input.existingHealthCopay && annual > 0) annual *= 0.7; // ประมาณผลของ copay/deductible
 
+  // สิทธิรัฐช่วยค่ารักษา (วงเงินเหมาจ่าย) ได้เต็มสัดส่วน แต่ให้ห้องรวม/ห้องพื้นฐาน → หักส่วนลดห้องเพียงครึ่งเดียว
   const targetRoom = target.roomPerDay * (1 - state.coverageRatio * 0.5);
   const targetAnnual = target.annualLimit * (1 - state.coverageRatio);
   const roomGap = clampMin(targetRoom - room);
@@ -169,9 +171,9 @@ export function analyzeHealth(input) {
   else status = 'ok';
 
   const notes = [
-    `เทียบระดับ "${target.label}" — ค่าห้องเป้าหมาย ${bn(target.roomPerDay)} บาท/วัน, วงเงินเหมาจ่าย ${bn(target.annualLimit)} บาท/ปี`,
+    `เทียบระดับ "${target.label}" — เป้าหมายเต็ม ค่าห้อง ${bn(target.roomPerDay)} บาท/วัน · วงเงินเหมาจ่าย ${bn(target.annualLimit)} บาท/ปี`,
   ];
-  if (state.coverageRatio > 0) notes.push(`หักสิทธิ ${state.label} (คุ้มครองประมาณ ${pct(state.coverageRatio)}% ของความต้องการ) แล้ว`);
+  if (state.coverageRatio > 0) notes.push(`หักสิทธิ ${state.label} แล้ว เหลือส่วนที่ควรมีประกันเอง ~${bn(Math.round(targetRoom))} บาท/วัน และ ~${bn(Math.round(targetAnnual))} บาท/ปี (ตัวเลข "ควรมี" ด้านบนคือหลังหักสิทธิแล้ว)`);
   if (input.existingHealthCopay) notes.push('ปรับลดวงเงินที่มีอยู่เพราะแผนเดิมมีความรับผิดส่วนแรก (copay/deductible)');
   notes.push(`ค่ารักษาพยาบาลเฟ้อเฉลี่ย ~${pct(ov(input, 'medicalInflation', RATES.medicalInflation))}% ต่อปี — ความคุ้มครองที่พอวันนี้อาจไม่พอในอนาคต`);
 
@@ -459,8 +461,13 @@ export function analyze(input) {
   const monthlySavingNeeded =
     (byKey.retirement.detail?.monthlySavingNeeded || 0) + (byKey.education.detail?.monthlySavingNeeded || 0);
 
+  // เช็คความเป็นไปได้: เงินออมที่ต้องใช้เทียบกับกระแสเงินสดที่เหลือต่อเดือน
+  const monthlySurplus = clampMin(n(input.monthlyIncome) - n(input.monthlyHouseholdExpense));
+  const savingsOverSurplus = monthlySavingNeeded > monthlySurplus;
+
+  // จัดลำดับความเร่งด่วน — ไม่รวมหมวด "ส่วนเสริม" (PA) เพราะไม่นับในช่องว่างรวมและไม่ควรเป็น "ก้าวแรก"
   const ranked = categories
-    .filter((c) => c.status !== 'ok' && c.applicable !== false)
+    .filter((c) => c.status !== 'ok' && c.applicable !== false && !c.excludeFromTotal)
     .sort((a, b) => b.severity - a.severity);
   const priorityOrder = ranked.map((c) => c.key);
 
@@ -491,6 +498,8 @@ export function analyze(input) {
       protectionGap,
       savingsGap,
       monthlySavingNeeded,
+      monthlySurplus: Math.round(monthlySurplus),
+      savingsOverSurplus,
       firstStep,
       totalGap: protectionGap + savingsGap, // เก็บไว้เผื่อ backward compat — อย่าโชว์เป็นตัวเด่น
       priorityOrder,

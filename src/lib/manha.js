@@ -59,7 +59,7 @@ export const LEAD_FIELDS = [
   {
     key: 'source', letter: '', label: 'ที่มาของรายชื่อ',
     options: [
-      { value: 'referral', label: 'มีคนแนะนำ (ระบุชื่อผู้แนะนำ)' },
+      { value: 'referral', label: 'มีคนแนะนำต่อ' },
       { value: 'warm', label: 'คนรู้จัก / ลูกค้าเดิม' },
       { value: 'cold', label: 'คนแปลกหน้า' },
     ],

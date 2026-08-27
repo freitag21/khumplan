@@ -9,12 +9,12 @@
  * ค่าที่ทบทวนกับ Win (ตัวแทน/นักวางแผน) รอบ 2026-08 แล้ว
  */
 
-export const ASSUMPTIONS_VERSION = '2026-08-28';
-export const TAX_YEAR = 2568;
+export const ASSUMPTIONS_VERSION = '2569-08'; // พ.ศ. — แสดงบนรายงาน
+export const TAX_YEAR = 2569; // ปีภาษีปัจจุบัน (เบี้ยที่ซื้อวันนี้ลดหย่อนปีนี้)
 
 export const RATES = {
   inflation: 0.03, // เงินเฟ้อทั่วไปต่อปี (planning number)
-  medicalInflation: 0.09, // เงินเฟ้อค่ารักษาพยาบาลต่อปี — medical trend ไทยจริง 8–14%
+  medicalInflation: 0.09, // เงินเฟ้อค่ารักษาพยาบาลต่อปี — ค่าอนุรักษ์นิยม (medical trend เอเชีย 2569 ~12.5% ตาม MMB Health Trends) ทบทวนรายปี
   educationInflation: 0.05, // เงินเฟ้อค่าการศึกษาต่อปี
   preRetireReturnLong: 0.05, // ผลตอบแทนก่อนเกษียณ เมื่อเหลือเวลา > 15 ปี
   preRetireReturnShort: 0.04, // ผลตอบแทนก่อนเกษียณ เมื่อเหลือเวลา ≤ 15 ปี
@@ -85,7 +85,7 @@ export const RETIREMENT = {
   expenseReplacementRatio: 0.7, // ค่าใช้จ่ายหลังเกษียณ = 70% ของค่าใช้จ่ายปัจจุบัน
 };
 
-/** ขั้นบันไดภาษีเงินได้บุคคลธรรมดา (ปีภาษี 2567 เป็นต้นมา) */
+/** ขั้นบันไดภาษีเงินได้บุคคลธรรมดา (ใช้ต่อเนื่องถึงปีภาษี 2569) */
 export const TAX_BRACKETS = [
   { upTo: 150000, rate: 0 },
   { upTo: 300000, rate: 0.05 },
@@ -103,14 +103,14 @@ export const TAX_DEDUCTION = {
   childAllowance: 30000, // ต่อคน (ค่ากลาง — บุตรคนที่ 2 ที่เกิดปี 2561+ ได้ 60,000)
   parentAllowancePerHead: 30000, // บิดา/มารดาอายุ 60+ ที่อยู่ในอุปการะ
   parentHealthMax: 15000,
-  socialSecurityMax: 9000,
+  socialSecurityMax: 10500, // ปี 2569: เพดานเงินสมทบ ม.33 = 875 บาท/เดือน × 12
   mortgageInterestMax: 100000,
   expenseDeductionMax: 100000, // หักค่าใช้จ่ายเงินเดือน 50% สูงสุด 100,000
   lifeAndHealthCombinedMax: 100000, // เบี้ยประกันชีวิต + สุขภาพตนเอง รวมกันไม่เกิน 100,000
   healthSubLimit: 25000, // ส่วนสุขภาพตนเอง ไม่เกิน 25,000 (อยู่ในเพดาน 100,000)
   pensionRateOfIncome: 0.15, // ประกันบำนาญ ไม่เกิน 15% ของเงินได้
   pensionMax: 200000, // และไม่เกิน 200,000
-  retirementCombinedMax: 500000, // รวมบำนาญ + RMF/SSF/PVD/กบข./กอช. ไม่เกิน 500,000
+  retirementCombinedMax: 500000, // รวมบำนาญ + RMF + PVD/กบข./กอช. ไม่เกิน 500,000 (SSF ยกเลิกแล้วหลังปีภาษี 2567 · ThaiESG มีเพดานแยก)
 };
 
 /** น้ำหนักของแต่ละหมวดในคะแนนความพร้อม (เฉพาะหมวดที่ใช้กับลูกค้ารายนั้น) */

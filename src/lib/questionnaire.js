@@ -3,7 +3,7 @@ import { HEALTH_TARGETS, STATE_HEALTH, EDUCATION_PRESETS, SCHOOL_PRESETS } from 
 const optList = (obj) => Object.entries(obj).map(([value, v]) => ({ value, label: v.label }));
 
 /**
- * โครงแบบสอบถาม (ตัวแทนกรอกเอง) — 5 ขั้น
+ * โครงแบบสอบถาม (ตัวแทนกรอกเอง) — 6 ขั้น
  * type: text | number | money | select | radio | checkbox | children
  */
 export const SECTIONS = [
@@ -87,7 +87,7 @@ export const SECTIONS = [
       { key: 'groupCiSum', label: 'ถ้ามี: ทุนโรคร้ายแรงกลุ่ม', type: 'money', showIf: (v) => v.groupHasCi },
       { key: 'pvdMonthlyContribution', label: 'เงินสะสมกองทุนสำรองเลี้ยงชีพ/กบข. ต่อเดือน (ลูกจ้าง + นายจ้าง)', type: 'money' },
       { key: 'ssoPensionMonthly', label: 'บำนาญชราภาพประกันสังคมโดยประมาณ (บาท/เดือน)', type: 'money' },
-      { key: 'rmfSsfPvdAnnual', label: 'RMF + SSF + PVD ที่จ่ายรวมต่อปี (สำหรับเพดานภาษี 500,000)', type: 'money' },
+      { key: 'rmfSsfPvdAnnual', label: 'RMF + PVD/กบข./กอช. ที่จ่ายรวมต่อปี (สำหรับเพดานภาษี 500,000)', type: 'money' },
     ],
   },
   {
@@ -102,6 +102,7 @@ export const SECTIONS = [
       { key: 'pensionPremiumPaid', label: 'เบี้ยประกันบำนาญที่จ่ายอยู่ต่อปี', type: 'money' },
       { key: 'netTaxableIncomeOverride', label: 'เงินได้สุทธิต่อปี (จาก ภ.ง.ด. ปีที่แล้ว · ถ้ากรอกจะใช้ค่านี้คำนวณภาษี)', type: 'money' },
       { key: 'parentsInCare', label: 'จำนวนบิดา/มารดาที่อยู่ในอุปการะ (อายุ 60+) — สำหรับลดหย่อนภาษี', type: 'number', min: 0, max: 4 },
+      { key: 'parentHealthPremiumPaid', label: 'เบี้ยประกันสุขภาพบิดา/มารดา ที่จ่ายต่อปี — สำหรับลดหย่อน (สูงสุด 15,000)', type: 'money' },
       { key: 'mortgageInterestPaid', label: 'ดอกเบี้ยกู้ซื้อบ้านที่จ่ายต่อปี — สำหรับลดหย่อนภาษี', type: 'money' },
       { key: 'riskTolerance', label: 'ระดับความเสี่ยงที่ลูกค้ารับได้ (ถ้าจะพิจารณายูนิตลิงก์)', type: 'select', default: 'unknown',
         options: [

@@ -40,6 +40,11 @@ describe('analyzeLife', () => {
     const annualIncome = 60000 * 12 + 120000;
     expect(r.need).toBeLessThanOrEqual(annualIncome * 15 + 2000000 + 300000 + 1);
   });
+
+  it('การ์ดกระทบกัน: มีอยู่ + ช่องว่าง = ควรมี', () => {
+    const r = analyzeLife({ ...base, liquidAssets: 900000 });
+    expect(r.have + r.gap).toBe(r.need);
+  });
 });
 
 describe('analyzeHealth', () => {
@@ -111,13 +116,15 @@ describe('analyze (รวม)', () => {
     expect(Array.isArray(r.summary.strengths)).toBe(true);
   });
 
-  it('อุบัติเหตุไม่ถูกนับใน protectionGap', () => {
+  it('อุบัติเหตุไม่ถูกนับใน protectionGap และไม่อยู่ในลำดับความเร่งด่วน/ก้าวแรก', () => {
     const r = analyze(base);
     const acc = r.categories.find((c) => c.key === 'accident');
     expect(acc.excludeFromTotal).toBe(true);
     const ci = r.categories.find((c) => c.key === 'ci');
     const life = r.categories.find((c) => c.key === 'life');
     expect(r.summary.protectionGap).toBe(life.gap + ci.gap);
+    expect(r.summary.priorityOrder).not.toContain('accident');
+    expect(r.summary.firstStep?.key).not.toBe('accident');
   });
 
   it('ไม่มีบุตร → หมวดการศึกษา applicable=false และไม่ถ่วงคะแนน', () => {

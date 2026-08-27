@@ -48,7 +48,7 @@ function estimateTaxableIncome(input) {
   const sso = n(input.socialSecurityPaid) || (input.stateHealth === 'sso' ? D.socialSecurityMax : 0);
   deductions += Math.min(sso, D.socialSecurityMax);
   deductions += Math.min(n(input.mortgageInterestPaid), D.mortgageInterestMax);
-  // ประกัน/RMF/SSF/PVD ที่จ่ายอยู่แล้ว (ก่อนซื้อเพิ่ม)
+  // ประกัน/RMF/PVD ที่จ่ายอยู่แล้ว (ก่อนซื้อเพิ่ม)
   deductions += Math.min(n(input.lifeHealthPremiumPaid), D.lifeAndHealthCombinedMax);
   deductions += Math.min(n(input.rmfSsfPvdAnnual) + n(input.pensionPremiumPaid), D.retirementCombinedMax);
 
@@ -64,7 +64,7 @@ export function analyzeTax(input) {
   const annualIncome = n(input.monthlyIncome) * 12 + n(input.otherAnnualIncome);
   const lifeHealthPaid = n(input.lifeHealthPremiumPaid);
   const pensionPaid = n(input.pensionPremiumPaid);
-  const otherRetirement = n(input.rmfSsfPvdAnnual); // PVD + RMF + SSF ที่จ่ายอยู่
+  const otherRetirement = n(input.rmfSsfPvdAnnual); // PVD/กบข./กอช. + RMF ที่จ่ายอยู่
 
   const taxableBefore = estimateTaxableIncome(input);
   const rate = marginalRate(taxableBefore);
@@ -101,7 +101,7 @@ export function analyzeTax(input) {
           ? ' (ใช้เงินได้สุทธิที่กรอกโดยตรง)'
           : ' — ควรตรวจสอบค่าลดหย่อนทั้งหมดกับผู้ทำบัญชี'),
       'เบี้ยประกันชีวิต + สุขภาพตนเอง รวมกันไม่เกิน 100,000 บาท (ส่วนสุขภาพตนเองไม่เกิน 25,000 บาท)',
-      'ประกันบำนาญไม่เกิน 15% ของเงินได้ และไม่เกิน 200,000 บาท เมื่อรวมกับ RMF/SSF/PVD/กบข./กอช. แล้วไม่เกิน 500,000 บาท',
+      'ประกันบำนาญไม่เกิน 15% ของเงินได้ และไม่เกิน 200,000 บาท เมื่อรวมกับ RMF + PVD/กบข./กอช. แล้วไม่เกิน 500,000 บาท (SSF สิ้นสุดสิทธิหลังปีภาษี 2567 · ThaiESG มีเพดานแยกต่างหาก)',
       'ตัวเลขภาษีที่ประหยัดคำนวณแบบภาษีก่อน−หลัง เป็นการประมาณการเบื้องต้น สิทธิจริงขึ้นกับรายการลดหย่อนทั้งหมดของท่าน',
     ],
   };

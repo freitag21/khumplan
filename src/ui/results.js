@@ -49,7 +49,7 @@ export function renderResults(result, opts = {}) {
         h('h1', {}, input.clientName ? `Protection Gap — ${input.clientName}` : 'Protection Gap'),
         h('div', { class: 'result-sub' }, sub.join(' · '), h('span', { class: 'sep' }, '|'), `จัดทำ ${thaiDate(meta.generatedAt)}`)),
       agent ? h('div', { class: 'agent-badge' },
-        h('div', { class: 'pic ap-noprint' }, 'รูป'),
+        h('div', { class: 'pic ap-noprint' }, (agent.display_name || '?').trim().charAt(0).toUpperCase()),
         h('div', {},
           h('div', { class: 'role' }, 'ตัวแทนผู้จัดทำ'),
           h('div', { class: 'nm' }, agent.display_name),
@@ -77,6 +77,9 @@ export function renderResults(result, opts = {}) {
             refPill('ทุนคุ้มครองที่ยังขาด', summary.protectionGap),
             refPill('เป้าหมายเงินออมที่ยังขาด', summary.savingsGap),
             summary.monthlySavingNeeded > 0 ? refPill('ออมครบทุกเป้าหมาย/เดือน', summary.monthlySavingNeeded) : null),
+          summary.savingsOverSurplus && summary.monthlySavingNeeded > 0
+            ? h('div', { class: 'summary-feasible' }, `ยอดนี้เกินกระแสเงินสดที่เหลือ (~${g(summary.monthlySurplus)} บาท/เดือน) — เริ่มจากด้านเร่งสุดก่อน แล้วค่อยเติมทีละด้านตามกำลัง`)
+            : null,
           chips.length ? h('div', { class: 'prio-cap' }, `${chips.length} ด้านที่ควรเร่งวางแผน`) : null,
           chips.length ? h('div', { class: 'prio-chips' }, ...chips) : null)
       )
@@ -199,7 +202,7 @@ export function renderResults(result, opts = {}) {
     const monthly = c.detail?.monthlySavingNeeded;
     if (monthly > 0) {
       const verb = c.key === 'education' ? 'เก็บเพิ่มประมาณ' : 'ออมเพิ่มประมาณ';
-      card.append(h('div', { class: 'action-pill' }, icon(ICONS.plus, { size: 14, stroke: '#1550b8' }),
+      card.append(h('div', { class: 'action-pill' }, icon(ICONS.plus, { size: 14, stroke: 'var(--ap-pri-ink)' }),
         verb, ' ', h('b', { class: 'n' }, g(monthly)), ' บาท/เดือน'));
     }
     if (c.key === 'education' && c.detail.annualSchoolFeeToday > 0) {
@@ -221,7 +224,7 @@ export function renderResults(result, opts = {}) {
         t.retirementCombinedRemaining < 500000 ? kv('เพดานรวมกลุ่มเกษียณเหลือ', g(t.retirementCombinedRemaining)) : null,
         h('hr', { class: 'hr', style: 'margin:11px -17px' }),
         h('div', { class: 'tax-big tax-save' }, h('span', { class: 'k' }, 'ประหยัดภาษีได้อีกราว'), h('span', { class: 'v n' }, g(t.potentialTaxSaving))),
-        h('div', { class: 'tax-note' }, (t.notes || []).slice(0, 2).join(' · '))));
+        h('ul', { class: 'tax-note' }, ...(t.notes || []).map((nt) => h('li', {}, nt)))));
   }
 }
 
@@ -319,7 +322,7 @@ function refPill(label, value) {
   return h('div', { class: 'ref-pill' }, h('span', {}, label), h('b', { class: 'n' }, Number.isFinite(value) ? Math.round(value).toLocaleString('th-TH') : '-'));
 }
 function healthStat(label, cur, target) {
-  return h('div', { class: 'health-stat' }, h('div', { class: 'k' }, label), h('div', { class: 'v n' }, g(cur)), h('div', { class: 't' }, `เป้า ${g(target)}`));
+  return h('div', { class: 'health-stat' }, h('div', { class: 'k' }, label), h('div', { class: 'v n' }, g(cur)), h('div', { class: 't' }, `ควรมี ${g(target)}`));
 }
 function kv(k, v, color) {
   return h('div', { class: 'kv' }, h('span', {}, k), h('b', { class: 'n', style: color ? `color:${color}` : null }, v));
@@ -332,9 +335,14 @@ function interpose(nodes, sep) {
 function maritalLabel(s) {
   return { single: 'โสด', married: 'สมรส', divorced: 'หย่า', widowed: 'หม้าย', single_parent: 'เลี้ยงบุตรคนเดียว' }[s] || 'โสด';
 }
+const THMONTH_FULL = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+function fmtAssumptionsVersion(v) {
+  const m = /^(\d{4})-(\d{2})$/.exec(String(v || ''));
+  return m ? `${THMONTH_FULL[+m[2]] || m[2]} ${m[1]}` : v;
+}
 function assumptionsLine(input, meta) {
   const o = input.overrides;
-  const parts = [`สมมติฐานเวอร์ชัน ${meta.assumptionsVersion}`];
+  const parts = [`อ้างอิงสมมติฐานฉบับ ${fmtAssumptionsVersion(meta.assumptionsVersion)}`];
   if (o && Object.keys(o).length) {
     const names = { medicalInflation: 'เงินเฟ้อค่ารักษา', preRetireReturn: 'ผลตอบแทนก่อนเกษียณ', postRetireReturn: 'ผลตอบแทนหลังเกษียณ', lifeExpectancy: 'วางแผนถึงอายุ', consumptionFactor: 'สัดส่วนทดแทนรายได้', yearsToSupport: 'ปีที่พึ่งพา', finalExpenses: 'ค่าใช้จ่ายช่วงสุดท้าย' };
     parts.push('ปรับ: ' + Object.entries(o).map(([k, v]) => `${names[k] || k} = ${k.includes('Return') || k.includes('Factor') || k.includes('Inflation') ? +(v * 100).toFixed(1) + '%' : Math.round(v).toLocaleString('th-TH')}`).join(', '));
