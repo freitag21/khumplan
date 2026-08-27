@@ -418,6 +418,16 @@ select.input { appearance: none; background-image:
 .tax-note { font-size: 10.5px; color: var(--ap-ink2); line-height: 1.5; margin-top: 10px; }
 
 .result-actions { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
+
+.line-warn {
+  margin-top: 12px; padding: 12px 14px;
+  display: flex; gap: 10px; align-items: flex-start;
+  background: var(--ap-warn-s); border: 1px solid var(--ap-warn);
+  border-radius: 10px; font-size: 12.5px; line-height: 1.55; color: var(--tag-warn-ink);
+}
+.line-warn svg { flex: none; margin-top: 2px; }
+.line-warn b { color: var(--ap-ink); }
+.line-warn .btn { font-size: 12.5px; padding: 6px 12px; }
 .disclaimer {
   margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--ap-line);
   display: flex; gap: 11px; align-items: flex-start;

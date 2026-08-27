@@ -18,6 +18,10 @@ const thaiDate = (iso) => {
   return `${d.getDate()} ${THMONTH[d.getMonth()]} ${d.getFullYear() + 543}`;
 };
 
+/** เปิดอยู่ในเบราว์เซอร์ในแอป LINE หรือไม่ (UA มี "Line/x.x.x") — ที่นั่นปุ่มพิมพ์มักใช้ไม่ได้ */
+const isLineInApp = () => /\bLine\//i.test(navigator.userAgent || '');
+const isAndroid = () => /Android/i.test(navigator.userAgent || '');
+
 /**
  * @param {ReturnType<import('../lib/needs.js').analyze>} result
  * @param {{agent?:object, onEdit?:Function, onSave?:Function, onCopyLink?:Function, readOnly?:boolean}} opts
@@ -117,14 +121,41 @@ export function renderResults(result, opts = {}) {
     taxCard(tax)));
 
   /* actions */
+  const copyThisLink = async () => {
+    try { await navigator.clipboard.writeText(location.href); alert('คัดลอกลิงก์แล้ว — เปิดลิงก์นี้ใน Chrome หรือ Safari แล้วกดพิมพ์อีกครั้ง'); }
+    catch (e) { prompt('คัดลอกลิงก์นี้ไปเปิดในเบราว์เซอร์:', location.href); }
+  };
+  const onPrint = () => {
+    if (isLineInApp()) {
+      const go = confirm(
+        'กำลังเปิดในแอป LINE — การบันทึก PDF อาจไม่ทำงานที่นี่\n\n' +
+        'แนะนำให้เปิดหน้านี้ในเบราว์เซอร์ (Chrome / Safari) ก่อน\n' +
+        'กด "ตกลง" เพื่อลองพิมพ์เลย หรือ "ยกเลิก" เพื่อคัดลอกลิงก์ไปเปิดในเบราว์เซอร์');
+      if (!go) return copyThisLink();
+    }
+    window.print();
+  };
+
   if (!opts.readOnly) {
     const actions = h('div', { class: 'result-actions ap-noprint' },
       h('button', { class: 'btn btn-secondary', onclick: () => opts.onEdit?.() }, icon(ICONS.back), 'แก้ไขข้อมูล'),
       h('div', { style: 'flex:1' }));
     if (opts.onCopyLink) actions.append(h('button', { class: 'btn btn-secondary', onclick: () => opts.onCopyLink() }, 'คัดลอกลิงก์แชร์'));
     if (opts.onSave) actions.append(h('button', { class: 'btn btn-secondary', onclick: () => opts.onSave() }, 'บันทึกผลวิเคราะห์'));
-    actions.append(h('button', { class: 'btn btn-primary ap-fill', onclick: () => window.print() }, icon(ICONS.print), 'พิมพ์ / บันทึก PDF'));
+    actions.append(h('button', { class: 'btn btn-primary ap-fill', onclick: onPrint }, icon(ICONS.print), 'พิมพ์ / บันทึก PDF'));
     wrap.append(actions);
+
+    if (isLineInApp()) {
+      wrap.append(h('div', { class: 'line-warn ap-noprint' },
+        infoCircle(),
+        h('div', {},
+          h('b', {}, 'กำลังเปิดในแอป LINE'),
+          h('div', { style: 'margin-top:3px' },
+            isAndroid()
+              ? 'บน Android การพิมพ์/บันทึก PDF ในแอป LINE มักไม่ทำงาน — กดเมนู ⋮ มุมขวาบน แล้วเลือก “เปิดในเบราว์เซอร์” (Chrome) ก่อน จึงกดปุ่มนี้อีกครั้ง'
+              : 'ถ้าปุ่มด้านบนไม่ตอบสนอง ให้กดปุ่มแชร์ ↗ มุมขวาบน แล้วเลือก “เปิดในเบราว์เซอร์” (Safari) ก่อน'),
+          h('button', { class: 'btn btn-secondary', style: 'margin-top:8px', onclick: copyThisLink }, 'คัดลอกลิงก์หน้านี้'))));
+    }
   }
 
   /* disclaimer + assumptions */
