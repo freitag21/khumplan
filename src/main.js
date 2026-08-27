@@ -5,7 +5,7 @@ import { h, brand, BRAND, themeToggle, SUPPORT } from './ui/dom.js';
 import { buildForm } from './ui/form.js';
 import { renderResults } from './ui/results.js';
 import { renderManha } from './ui/manha.js';
-import { renderAuth, renderLanding, renderSupport, renderGuide, renderContact } from './ui/pages.js';
+import { renderAuth, renderLanding, renderSupport, renderGuide, renderContact, renderTerms, renderPrivacy } from './ui/pages.js';
 import { renderDashboard } from './ui/dashboard.js';
 import { hasSupabase } from './supabase.js';
 import { getAgentProfile, signUp, signIn, sendPasswordReset, updatePassword, signOut, onAuthChange } from './auth.js';
@@ -48,6 +48,8 @@ function route() {
   if (view === 'support') return mount(renderSupport({ onBack: () => nav('?') }), { bare: true });
   if (view === 'guide') return mount(renderGuide({ onBack: () => nav('?'), onStart: () => nav('?view=quick') }));
   if (view === 'contact') return mount(renderContact({ onBack: () => nav('?'), onSupport: SUPPORT.enabled ? () => nav('?view=support') : null }));
+  if (view === 'terms') return mount(renderTerms({ onBack: () => nav('?') }));
+  if (view === 'privacy') return mount(renderPrivacy({ onBack: () => nav('?') }));
   if (view === 'quick') return showQuick();
   return showForm();
 }
@@ -95,6 +97,8 @@ const footer = () => h('div', { class: 'footer ap-noprint' },
   h('span', { class: 'footer-links' },
     footerLink('วิธีใช้', '?view=guide'),
     footerLink('ติดต่อเรา', '?view=contact'),
+    footerLink('ข้อกำหนดการใช้งาน', '?view=terms'),
+    footerLink('นโยบายความเป็นส่วนตัว', '?view=privacy'),
     SUPPORT.enabled
       ? h('a', { class: 'footer-support', href: '?view=support', onclick: (e) => { e.preventDefault(); nav('?view=support'); } }, '☕ สนับสนุนโปรเจค')
       : null));
