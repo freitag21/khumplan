@@ -8,11 +8,10 @@ export const BRAND = 'KhumPlan'; // คุ้มแพลน — เปลี่
  */
 export const SUPPORT = {
   enabled: true,
-  qrImage: '', // เช่น '/support-qr.png' — วางไฟล์ QR พร้อมเพย์ไว้ใน public/
-  qrCaption: '', // ชื่อบัญชี/พร้อมเพย์ที่จะขึ้นใต้ QR
+  qrImage: '/support-qr.jpg', // พร้อมเพย์ (ใช้ QR เดียวกับ ChanSpace — เปลี่ยนไฟล์ใน public/ ได้)
+  qrCaption: 'สแกนพร้อมเพย์ — เลี้ยงกาแฟกันได้เลย',
   links: [
     // { label: 'Ko-fi', url: 'https://ko-fi.com/xxxx' },
-    // { label: 'Buy Me a Coffee', url: 'https://buymeacoffee.com/xxxx' },
   ],
 };
 export const hasSupport = () =>

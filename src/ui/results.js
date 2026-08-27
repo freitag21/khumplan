@@ -1,6 +1,6 @@
-import { h, icon, ICONS } from './dom.js';
+import { h, icon, ICONS, logoMark, BRAND } from './dom.js';
 import { recommend } from '../lib/recommend.js';
-import { scoreGauge, sevRow, miniBars } from './charts.js';
+import { scoreGauge, sevRow, miniBars, severityColor } from './charts.js';
 import { renderPyramid } from './pyramid.js';
 
 const STATUS = {
@@ -40,11 +40,12 @@ export function renderResults(result, opts = {}) {
   wrap.append(
     h('div', { class: 'result-head' },
       h('div', { style: 'flex:1' },
+        h('div', { class: 'result-letterhead' }, logoMark(18), h('span', {}, BRAND)),
         h('div', { class: 'result-kicker' }, 'รายงานวิเคราะห์ความคุ้มครอง'),
         h('h1', {}, input.clientName ? `Protection Gap — ${input.clientName}` : 'Protection Gap'),
         h('div', { class: 'result-sub' }, sub.join(' · '), h('span', { class: 'sep' }, '|'), `จัดทำ ${thaiDate(meta.generatedAt)}`)),
       agent ? h('div', { class: 'agent-badge' },
-        h('div', { class: 'pic' }, 'รูป'),
+        h('div', { class: 'pic ap-noprint' }, 'รูป'),
         h('div', {},
           h('div', { class: 'role' }, 'ตัวแทนผู้จัดทำ'),
           h('div', { class: 'nm' }, agent.display_name),
@@ -88,18 +89,21 @@ export function renderResults(result, opts = {}) {
   /* financial pyramid */
   wrap.append(renderPyramid(result));
 
-  /* severity bars */
+  /* severity bars — ซ่อนตอนพิมพ์ (ใช้ตารางแทน) */
   const applicable = categories.filter((c) => c.applicable !== false);
   const sorted = [...applicable].sort((a, b) => b.severity - a.severity);
-  wrap.append(h('div', { class: 'section' },
+  wrap.append(h('div', { class: 'section sec-severity' },
     h('h2', {}, 'ระดับช่องว่างแต่ละด้าน'),
     h('div', { class: 'section-hint' }, 'แถบยาวกว่า = ควรวางแผนก่อน (0–100) · อุบัติเหตุ/ทุพพลภาพเป็นส่วนเสริม ไม่รวมในช่องว่างรวม'),
     h('div', { class: 'sev-list' }, ...sorted.map((c) => sevRow(c.label, c.severity, c.status === 'ok')))));
 
-  /* category cards */
-  wrap.append(h('div', { class: 'section' },
+  /* category cards — ซ่อนตอนพิมพ์ (ใช้ตารางแทน) */
+  wrap.append(h('div', { class: 'section sec-catcards' },
     h('h2', { style: 'margin-bottom:14px' }, 'รายละเอียดแต่ละด้าน'),
     h('div', { class: 'cat-grid' }, ...applicable.map(catCard))));
+
+  /* ตารางรวม 6 ด้าน — แสดงเฉพาะตอนพิมพ์ */
+  wrap.append(printCatTable(sorted));
 
   /* recommendations + tax */
   wrap.append(h('div', { class: 'rec-tax' },
@@ -188,6 +192,68 @@ export function renderResults(result, opts = {}) {
         h('div', { class: 'tax-big tax-save' }, h('span', { class: 'k' }, 'ประหยัดภาษีได้อีกราว'), h('span', { class: 'v n' }, g(t.potentialTaxSaving))),
         h('div', { class: 'tax-note' }, (t.notes || []).slice(0, 2).join(' · '))));
   }
+}
+
+const PRINT_STATUS = { none: 'ยังไม่มี', gap: 'มีช่องว่าง', ok: 'พอแล้ว' };
+
+/** ตารางรวม 6 ด้าน สำหรับหน้าพิมพ์ (ซ่อนบนจอ) */
+function printCatTable(sorted) {
+  let hasSchoolFee = false;
+  const rows = sorted.map((c) => {
+    const st = STATUS[c.status];
+    const stText = c.excludeFromTotal ? 'ส่วนเสริม' : PRINT_STATUS[c.status];
+    let have, need, gap, monthly;
+
+    if (c.key === 'health') {
+      const d = c.detail;
+      have = `${g(d.currentRoom)}/วัน`;
+      need = `${g(d.targetRoom)}/วัน`;
+      gap = '—';
+      monthly = '—';
+    } else if (c.key === 'retirement' && c.detail.mode === 'decumulation') {
+      const d = c.detail;
+      have = g(c.have);
+      need = '—';
+      gap = d.potLastsYears === Infinity ? 'เพียงพอ' : `ใช้ได้ ~${d.potLastsYears} ปี`;
+      monthly = '—';
+    } else {
+      have = g(c.have);
+      need = g(c.need);
+      gap = g(c.gap);
+      const m = c.detail?.monthlySavingNeeded;
+      monthly = m > 0 ? g(m) : '—';
+      if (c.key === 'education' && c.detail.annualSchoolFeeToday > 0 && monthly !== '—') {
+        monthly = monthly + ' *';
+        hasSchoolFee = true;
+      }
+    }
+
+    const sevPct = Math.max(3, Math.min(100, c.severity));
+    return h('tr', {},
+      h('td', { class: `pct-name st-${st.cls.replace('st-', '')}` },
+        h('div', { class: 'pcn-label' }, c.label),
+        h('div', { class: 'pcn-bar' }, h('i', { style: `width:${sevPct}%;background:${c.status === 'ok' ? 'var(--ap-ok)' : severityColor(c.severity)}` }))),
+      h('td', {}, h('span', { class: `tag ${st.tag}` }, stText)),
+      h('td', { class: 'num' }, have),
+      h('td', { class: 'num' }, need),
+      h('td', { class: 'num pct-gap', style: (typeof gap === 'string' && /^[\d,]+$/.test(gap) && +gap.replace(/,/g, '') > 0) ? 'color:var(--ap-bad)' : '' }, gap),
+      h('td', { class: 'num' }, monthly)
+    );
+  });
+
+  const hint = 'แถบใต้ชื่อด้าน = ระดับความเร่งด่วน (0–100) · ตัวเลขเป็นบาท ยกเว้นประกันสุขภาพเป็นบาท/วัน · ' +
+    'อุบัติเหตุ/ทุพพลภาพเป็นส่วนเสริม ไม่รวมในช่องว่างรวม' +
+    (hasSchoolFee ? ' · * การศึกษา: ยังไม่รวมค่าเทอมรายปีที่เตรียมจากกระแสเงินสด' : '');
+
+  return h('div', { class: 'section print-only print-cat-wrap' },
+    h('h2', {}, 'ช่องว่างแต่ละด้าน'),
+    h('table', { class: 'print-cat-table' },
+      h('thead', {}, h('tr', {},
+        h('th', {}, 'ด้าน'), h('th', {}, 'สถานะ'),
+        h('th', { class: 'num' }, 'มีอยู่'), h('th', { class: 'num' }, 'ควรมี'),
+        h('th', { class: 'num' }, 'ช่องว่าง'), h('th', { class: 'num' }, 'ออม/เดือน'))),
+      h('tbody', {}, ...rows)),
+    h('div', { class: 'print-cat-hint' }, hint));
 }
 
 function recRow(r) {
