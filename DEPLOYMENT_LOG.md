@@ -25,11 +25,12 @@
 | `5c13ea7` | **QA รอบ Por — เครื่องคำนวณ/compliance**: การ์ดชีวิตตัวเลขบวกกันได้, อุบัติเหตุไม่นับใน priority/พีระมิด, เตือนเมื่อออมเกินกระแสเงินสด, การ์ดสุขภาพเป้าตรงกัน, ปีภาษี 2568→2569 + ปกส. 9,000→10,500, เอา SSF (ยกเลิกแล้ว) ออก, term life เลิกใช้คำ "เบี้ยจ่ายทิ้ง" |
 | `023f272` | **QA รอบ Por — ความปลอดภัย/PDPA/UI**: หน้าแชร่ลูกค้าไม่มีเมนูตัวแทน, slug 128-bit, security headers + favicon + OG, Terms เพิ่มข้อผู้ควบคุม–ผู้ประมวลผล + ปุ่มปิดบัญชี (migration 0003), "ลืมรหัสผ่าน" ไม่หลอกว่าส่งอีเมลแล้ว, topbar/ไอคอน dark mode/มือถือ |
 
-### ยังต้องทำ (จากรอบ QA)
-- **รัน `supabase/0003_qa_fixes.sql`** ใน Supabase SQL Editor (เพิ่มคอลัมน์ policy_accepted_*, ปุ่มปิดบัญชี, freeze consent)
-- ตั้ง **custom SMTP (Resend)** แล้วเปลี่ยน `EMAIL_ENABLED = true` ใน `src/ui/dom.js` + เปิด Confirm email
-- S15: เปลี่ยนช่องติดต่อจาก Gmail ส่วนตัว → `hello@khumplan.com` และเปลี่ยน QR พร้อมเพย์เป็นเลขบัญชีธนาคาร (ไม่ใช่เบอร์/บัตร ปชช.)
-- (polish) แปลง `public/og.svg` → `og.png` 1200×630 สำหรับพรีวิวลิงก์ที่สมบูรณ์
+### รอบ QA — ทำต่อจนเสร็จ (2026-08-27)
+- ✅ **รัน migration 0003** — user รันใน Supabase SQL Editor แล้ว (คอลัมน์ policy_accepted_*, ปุ่มปิดบัญชี, freeze consent)
+- ✅ **Resend SMTP** — สมัคร Resend, domain khumplan.com verified (DNS auto ผ่าน Cloudflare integration: DKIM `resend._domainkey`, SPF `send` MX+TXT), API key `khumplan-smtp`, ใส่ใน Supabase SMTP (smtp.resend.com:465, user `resend`). ทดสอบ: password-recovery mail = **Delivered**. `EMAIL_ENABLED = true` (commit 7421bbb). เปิด "Confirm email" กลับแล้ว. rate limit → 30/ชม.
+- ✅ **QR** — QR ใหม่ (e-wallet proxy) crop + ติดตั้ง (commit df7134b)
+- ⏳ **ช่องติดต่อ** — ยังเป็น `sophon.ps21@gmail.com` (ตัดสินใจไม่ทำ Cloudflare Email Routing เพราะต้องแตะ apex MX ที่ใช้ serve เว็บด้วย เสี่ยงเกินคุณค่าสำหรับโปรเจคคนเดียว — Gmail ตรงไปตรงมาสำหรับ solo project)
+- ⏳ (polish) แปลง `public/og.svg` → `og.png` 1200×630
 
 ### GitHub
 - สร้าง repo `github.com/freitag21/khumplan` แล้ว push ทั้งหมด (branch `main`)
