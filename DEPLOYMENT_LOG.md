@@ -5,6 +5,15 @@
 
 ---
 
+## 2026-08-28 — Landing page (ขายก่อน signup)
+
+- เขียน `renderLanding` ใหม่ตามแผนการตลาด (STRATEGY.md): mini topbar + hero + "ดูของจริง" + ทำงานยังไง (3 ขั้น) + สิ่งที่ได้ (6) + ทำไมไม่ใช้โปรแกรมบริษัท/CRM + ปลอดภัย คปภ./PDPA + แถบหัวหน้าทีม + บรรทัดราคา + FAQ (เพิ่ม "ราคาเท่าไหร่") + CTA ปิด
+- **Router**: root เมื่อยังไม่ล็อกอิน → หน้า landing (เดิม = หน้า Log in) · ล็อกอินแล้ว → เข้าเครื่องมือทันที · `?view=landing` ใช้ helper `showLanding()` ตัวเดียวกัน
+- CTA หลัก "เริ่มใช้ฟรี" → `?view=auth&m=signup` · "ดูตัวอย่างผลลัพธ์" → โหลดตัวอย่าง sample · "สนใจแพ็กเกจ Team" → `mailto:` หา founder (ไม่มี backend)
+- ไอคอน `feat` เลิก hardcode `#1f6feb` → `var(--ap-pri-ink)` · CSS ใหม่: `.landing-topbar`, `.step-card`, `.vs-card`, `.land-trust-list`, `.land-team-card`, `.land-price`
+- ทดสอบ localhost: build ผ่าน, 27 tests ผ่าน, ไม่มี console error, มือถือ 375px คอลัมน์เดียวไม่ล้นจอ
+- commit: (ดู git log)
+
 ## 2026-08-27 — เปิดใช้งานจริง (launch)
 
 ### โค้ด (commits บน `main`)

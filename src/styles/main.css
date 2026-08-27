@@ -740,6 +740,55 @@ ul.tax-note li { margin: 0; }
 .feat .fd { font-size: 12.5px; color: var(--ap-ink2); line-height: 1.6; }
 .landing-foot { background: var(--ap-deep); color: #eaeef5; padding: 34px; border-radius: 14px; margin: 20px 0; }
 
+/* landing — mini topbar */
+.landing-topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 0 0; }
+
+/* landing — shared sub copy */
+.land-sub { font-size: 13px; color: var(--ap-ink2); line-height: 1.7; margin-top: 10px; max-width: 560px; }
+.land-proof .land-sub { margin-bottom: 0; }
+
+/* landing — how it works */
+.land-steps .step-card {
+  background: var(--ap-bg); border: 1px solid var(--ap-line); border-radius: 12px; padding: 20px;
+}
+.sc-num {
+  width: 26px; height: 26px; border-radius: 8px; background: var(--ap-pri-soft); color: var(--ap-pri-ink);
+  display: grid; place-items: center; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.sc-t { font-size: 14px; font-weight: 600; margin-top: 12px; }
+.sc-d { font-size: 12.5px; color: var(--ap-ink2); line-height: 1.65; margin-top: 6px; }
+
+/* landing — vs cards */
+.land-vs .vs-card {
+  background: var(--ap-bg); border: 1px solid var(--ap-line); border-radius: 12px; padding: 20px;
+}
+.vs-head { font-size: 13.5px; font-weight: 700; }
+.vs-them { font-size: 12.5px; color: var(--ap-ink2); line-height: 1.6; margin-top: 8px; }
+.vs-us { font-size: 12.5px; color: var(--ap-ink); line-height: 1.6; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--ap-line); }
+
+/* landing — compliance */
+.land-trust-list { list-style: none; padding: 0; margin: 18px 0 0; display: flex; flex-direction: column; gap: 10px; }
+.land-trust-list li {
+  font-size: 12.5px; color: var(--ap-ink); line-height: 1.6; padding-left: 24px; position: relative;
+}
+.land-trust-list li::before {
+  content: "✓"; position: absolute; left: 0; top: 0; color: var(--ap-ok); font-weight: 700;
+}
+
+/* landing — team leaders */
+.land-team-card {
+  background: var(--ap-pri-soft); border-radius: 14px; padding: 26px;
+  display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+}
+.land-team-card > div:first-child { flex: 1; min-width: 260px; }
+.lt-kicker { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ap-pri-ink); font-weight: 600; }
+.land-team-card h2 { font-size: 20px; margin-top: 4px; }
+.land-team-card p { font-size: 12.5px; color: var(--ap-ink2); line-height: 1.7; margin-top: 8px; }
+.lt-note { font-size: 11.5px; color: var(--ap-pri-ink); margin-top: 10px; font-weight: 500; }
+
+/* landing — pricing */
+.land-price .land-sub b { color: var(--ap-ink); }
+
 /* ============================================================================
    Responsive
    ========================================================================== */

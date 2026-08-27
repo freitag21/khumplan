@@ -436,17 +436,26 @@ const SEV_PREVIEW = [
   ['ประกันสุขภาพ', 70, '#e0902a'],
 ];
 
-export function renderLanding({ onStart, onPreview, onLogin } = {}) {
+const TEAM_MAILTO = `mailto:${CONTACT.email || ''}?subject=${encodeURIComponent('สนใจแพ็กเกจ Team — KhumPlan')}&body=${encodeURIComponent('ชื่อ:\nบริษัท/สังกัด:\nจำนวนตัวแทนในทีม:\nอยากคุยเรื่อง:')}`;
+
+export function renderLanding({ onStart, onPreview, onSignup, onLogin } = {}) {
+  const go = (fn) => (e) => { e?.preventDefault?.(); fn?.(); };
   const wrap = h('div', { class: 'landing' },
+    // ── mini topbar ──
+    h('div', { class: 'landing-topbar' },
+      brand(22),
+      h('a', { href: '?view=auth', class: 'topbar-link', onclick: go(onLogin) }, 'เข้าสู่ระบบ')),
+
+    // ── hero ──
     h('div', { class: 'landing-hero' },
       h('div', {},
         h('span', { class: 'tag p-info' }, 'สำหรับตัวแทนประกันชีวิต · สุขภาพ · สะสมทรัพย์ · ยูนิตลิงก์'),
         h('h1', {}, 'ลูกค้าเห็นช่องว่าง', h('br'), 'ก่อนที่คุณจะต้องอธิบาย'),
-        h('p', {}, 'กรอกข้อมูลที่ได้จากการคุยกับลูกค้า ระบบสรุปเป็นอินโฟกราฟิก Protection Gap 6 ด้าน พร้อมประเภทประกันที่ควรพิจารณาและสิทธิลดหย่อนภาษีที่เหลือ — พิมพ์ PDF หรือส่งลิงก์ให้ลูกค้าได้ทันที'),
+        h('p', {}, 'กรอกข้อมูลจากบทสนทนากับลูกค้า ~3 นาที ระบบสรุปเป็นอินโฟกราฟิก Protection Gap 6 ด้าน พร้อมประเภทประกันที่ควรพิจารณาและสิทธิลดหย่อนภาษีที่เหลือ — พิมพ์ PDF หน้าเดียว หรือส่งลิงก์ให้ลูกค้าได้ทันที'),
         h('div', { class: 'cta' },
-          h('button', { class: 'btn btn-primary ap-fill', style: 'min-height:42px;padding:0 18px', onclick: () => onStart?.() }, 'เริ่มคัดกรองผู้มุ่งหวัง'),
-          h('button', { class: 'btn btn-secondary', style: 'min-height:42px;padding:0 18px', onclick: () => onPreview?.() }, 'ดูตัวอย่างผลลัพธ์')),
-        h('div', { class: 'fine' }, 'ไม่ต้องใส่บัตรเครดิต · ใช้บนมือถือและ iPad ได้ทันที')
+          h('button', { class: 'btn btn-primary ap-fill', style: 'min-height:42px;padding:0 20px', onclick: go(onSignup) }, 'เริ่มใช้ฟรี'),
+          h('button', { class: 'btn btn-secondary', style: 'min-height:42px;padding:0 18px', onclick: go(onPreview) }, 'ดูตัวอย่างผลลัพธ์')),
+        h('div', { class: 'fine' }, 'ฟรี · ไม่ต้องใส่บัตรเครดิต · ใช้บนมือถือและ iPad ได้ทันที')
       ),
       h('div', { class: 'hero-preview' },
         h('div', { class: 'cap' }, 'ตัวอย่างสรุป'),
@@ -461,23 +470,75 @@ export function renderLanding({ onStart, onPreview, onLogin } = {}) {
       )
     ),
     h('hr', { class: 'hr', style: 'margin:0' }),
-    section('ปัญหาที่เครื่องมือนี้แก้', h('div', { class: 'cols-3' },
-      probCard('ลูกค้าไม่เห็นช่องว่างของตัวเอง', 'พูดเป็นตัวเลขลอย ๆ ลูกค้าจับภาพไม่ได้ ต่างจากการเห็นแท่ง "มีอยู่ 1 ล้าน / ควรมี 14 ล้าน" ในหน้าเดียว'),
-      probCard('ปิดการขายช้า ต้องนัดหลายรอบ', 'สรุปจบในนัดเดียว ลูกค้าได้ PDF กลับไปคุยกับคู่สมรสพร้อมชื่อและ LINE ของคุณติดอยู่'),
-      probCard('ทำเอกสารเองกินเวลา', 'กรอกครั้งเดียวประมาณ 3 นาที ได้รายงานที่หน้าตาเหมือนกันทุกครั้ง'))),
+
+    // ── proof / see it ──
+    h('div', { class: 'landing-section land-proof' },
+      h('h2', {}, 'ดูของจริงก่อนตัดสินใจ'),
+      h('p', { class: 'land-sub' }, 'โหลดตัวอย่างผลวิเคราะห์ที่กรอกข้อมูลไว้แล้ว — เห็นหน้าสรุป พีระมิด ตาราง 6 ด้าน และหน้า PDF โดยไม่ต้องสมัคร'),
+      h('button', { class: 'btn btn-primary ap-fill', style: 'min-height:42px;padding:0 22px;margin-top:16px', onclick: go(onPreview) }, 'เปิดตัวอย่างผลลัพธ์เต็ม')),
     h('hr', { class: 'hr', style: 'margin:0' }),
+
+    // ── how it works ──
+    section('ทำงานยังไง',
+      h('div', { class: 'cols-3 land-steps' },
+        stepCard('1', 'คัดกรองก่อน (ถ้าต้องการ)', 'ตอบ MANHA 5 ข้อสั้น ๆ ระบบบอกว่าควรลงเวลากับผู้มุ่งหวังคนนี้เลย หรือเก็บไว้ตามภายหลัง'),
+        stepCard('2', 'กรอกจากบทสนทนา', 'แบบสอบถาม 6 ขั้น ~3 นาที กรอกเท่าที่รู้ก่อนได้ ช่องที่เว้นไว้ระบบใช้ค่ามาตรฐาน'),
+        stepCard('3', 'ได้ผลทันที', 'อินโฟกราฟิก 6 ด้าน + พีระมิดการเงิน + สิทธิลดหย่อนภาษี · พิมพ์ PDF A4 หรือส่งลิงก์ให้ลูกค้า'))),
+    h('hr', { class: 'hr', style: 'margin:0' }),
+
+    // ── features ──
     section('สิ่งที่ได้', h('div', { class: 'cols-2' },
       feat('M2.5 13.5V9m4 4.5V5.5m4 8V2.5m4 11V7', 'วิเคราะห์ 6 ด้าน', 'ชีวิต/คุ้มครองรายได้ · สุขภาพ · โรคร้ายแรง · อุบัติเหตุ/ทุพพลภาพ · เกษียณ · ทุนการศึกษาบุตร'),
-      feat(['M5 6V2.5h6V6M4 6h8v5H4z', 'M5.5 11v2.5h5V11'], 'พิมพ์ PDF ได้สวย', 'จัดหน้า A4 ไว้แล้ว การ์ดไม่ขาดหน้า อ่านออกแม้พิมพ์ขาวดำ'),
-      feat('M6.5 9.5a3 3 0 004.2 0l2-2a3 3 0 10-4.2-4.2l-.6.6M9.5 6.5a3 3 0 00-4.2 0l-2 2a3 3 0 104.2 4.2l.6-.6', 'แชร์ลิงก์ให้ลูกค้า', 'หน้าอ่านอย่างเดียว มีชื่อและ LINE ของคุณติดอยู่ท้ายจอตลอด'),
-      feat('M2.5 3h11v10.5h-11zM2.5 6.5h11', 'สมุดลูกค้า', 'เก็บผลวิเคราะห์ทุกคนไว้ที่เดียว พร้อมเตือนต่ออายุทาง LINE — เร็ว ๆ นี้'))),
+      feat('M8 1.5L2 5v4.5C2 12.5 4.5 15 8 15s6-2.5 6-5.5V5z', 'นำด้วย "ก้าวแรก"', 'บอกว่าควรเริ่มเติมด้านไหนก่อน ไม่ยิงตัวเลขหลักสิบล้านใส่หน้าลูกค้าให้ตกใจ'),
+      feat(['M5 6V2.5h6V6M4 6h8v5H4z', 'M5.5 11v2.5h5V11'], 'พิมพ์ PDF A4 หน้าเดียว', 'มีชื่อและเลขใบอนุญาตของคุณบนหัวกระดาษ อ่านออกแม้พิมพ์ขาวดำ'),
+      feat('M6.5 9.5a3 3 0 004.2 0l2-2a3 3 0 10-4.2-4.2l-.6.6M9.5 6.5a3 3 0 00-4.2 0l-2 2a3 3 0 104.2 4.2l.6-.6', 'แชร์ลิงก์ให้ลูกค้า', 'หน้าอ่านอย่างเดียว อายุ 90 วัน มีชื่อและ LINE ของคุณติดอยู่'),
+      feat('M8 4v4l3 2M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13z', 'สิทธิลดหย่อนภาษีที่เหลือ', 'คำนวณภาษีก่อน–หลัง บอกว่ายังใช้สิทธิประกันชีวิต/บำนาญได้อีกเท่าไหร่'),
+      feat('M2.5 3h11v10.5h-11zM2.5 6.5h11', 'สมุดลูกค้า + เตือน LINE', 'เก็บผลวิเคราะห์ทุกคน + เตือนต่ออายุ/วันเกิด — เร็ว ๆ นี้ (Pro)'))),
+    h('hr', { class: 'hr', style: 'margin:0' }),
+
+    // ── differentiation ──
+    section('ทำไมไม่ใช้โปรแกรมของบริษัท หรือ CRM ทั่วไป', h('div', { class: 'cols-2 land-vs' },
+      vsCard('vs โปรแกรม illustration ของบริษัท',
+        'อันนั้นคือตารางผลประโยชน์ของผลิตภัณฑ์เดียว บริษัทเดียว ทำมาเพื่อปิดการขาย', 'KhumPlan เห็นภาพรวมทั้ง 6 ความต้องการ ไม่ผูกบริษัท — ใช้เครื่องมือเดียวได้ไม่ว่าสุดท้ายจะวางผลิตภัณฑ์บริษัทไหน'),
+      vsCard('vs CRM ทั่วไป',
+        'อันนั้นคือกล่องเปล่า ต้องออกแบบ pipeline และฟิลด์เอง ให้แค่ "ที่เก็บเบอร์"', 'KhumPlan สร้างมารอบงาน needs-analysis ประกันอยู่แล้ว — ให้ "เหตุผลที่ต้องโทรหา" ลูกค้า (ช่องว่าง ต่ออายุ โอกาสเสนอเพิ่ม)'))),
+    h('hr', { class: 'hr', style: 'margin:0' }),
+
+    // ── compliance / trust ──
+    h('div', { class: 'landing-section land-trust' },
+      h('h2', {}, 'ปลอดภัยเรื่อง คปภ. และ PDPA'),
+      h('ul', { class: 'land-trust-list' },
+        h('li', {}, 'ไม่ระบุชื่อแบบประกันหรือบริษัทใด — แนะนำเป็นประเภทความคุ้มครองเท่านั้น'),
+        h('li', {}, 'ไม่ใช่ตารางผลประโยชน์ ไม่ใช่การเสนอขายกรมธรรม์ มีข้อความกำกับทุกหน้าผล'),
+        h('li', {}, 'ตัวแทนเป็นผู้ควบคุมข้อมูล — ข้อมูลลูกค้าของคุณไม่แชร์ให้ตัวแทนคนอื่น'),
+        h('li', {}, 'ก่อนบันทึกต้องยืนยันว่าได้รับความยินยอมจากลูกค้า (PDPA) · ลบได้ตลอดเวลา'))),
+    h('hr', { class: 'hr', style: 'margin:0' }),
+
+    // ── team leaders ──
+    h('div', { class: 'landing-section land-team' },
+      h('div', { class: 'land-team-card' },
+        h('div', {},
+          h('div', { class: 'lt-kicker' }, 'สำหรับหัวหน้าทีม'),
+          h('h2', {}, 'มีทีมในความดูแล?'),
+          h('p', {}, 'KhumPlan กำลังพัฒนาแพ็กเกจ Team — แดชบอร์ดหัวหน้าทีม (ใครยัง active · จำนวนเคส · ยอดรวมทีม แบบไม่เห็นข้อมูลลูกค้าของลูกทีม) · onboarding ตัวแทนใหม่ · สมมติฐานมาตรฐานทีม · โลโก้ทีมบนทุกรายงาน'),
+          h('div', { class: 'lt-note' }, 'ผู้ที่แจ้งความสนใจตอนนี้ได้ราคา Founding ล็อก 2 ปี')),
+        h('a', { class: 'btn btn-primary ap-fill', style: 'min-height:42px;padding:0 20px;white-space:nowrap', href: TEAM_MAILTO }, 'สนใจแพ็กเกจ Team →'))),
+    h('hr', { class: 'hr', style: 'margin:0' }),
+
+    // ── pricing transparency ──
+    h('div', { class: 'landing-section land-price' },
+      h('h2', {}, 'ราคา'),
+      h('p', { class: 'land-sub' }, h('b', {}, 'เครื่องมือวิเคราะห์หลัก (MANHA + Protection Gap + PDF + ลิงก์แชร์) ฟรีตลอดไป'), ' — แพ็กเกจ Pro (สมุดลูกค้า + เตือน LINE) และ Team (ฟีเจอร์ทีม) แบบเสียเงินกำลังพัฒนา · ผู้ใช้รุ่นแรกได้ราคา Founding ล็อกถาวร')),
+
     faq(),
+
+    // ── final CTA + footer ──
     h('div', { class: 'landing-foot' },
       h('div', { style: 'display:flex;align-items:flex-end;gap:26px;flex-wrap:wrap' },
         h('div', { style: 'flex:1' },
           h('h2', { style: 'font-size:22px' }, 'เริ่มจากลูกค้าคนถัดไปของคุณ'),
-          h('div', { style: 'font-size:12.5px;color:rgba(234,238,245,.6);margin-top:7px' }, 'สมัครฟรีด้วยอีเมลและรหัสผ่าน')),
-        h('button', { class: 'btn btn-secondary', style: 'border-color:#4f9bff;color:#9dc6ff;min-height:42px;padding:0 20px', onclick: () => onLogin?.() }, 'เริ่มใช้ฟรี')),
+          h('div', { style: 'font-size:12.5px;color:rgba(234,238,245,.6);margin-top:7px' }, 'สมัครฟรีด้วยอีเมลและรหัสผ่าน ~30 วินาที')),
+        h('button', { class: 'btn btn-secondary', style: 'border-color:#4f9bff;color:#9dc6ff;min-height:42px;padding:0 22px', onclick: go(onSignup) }, 'เริ่มใช้ฟรี')),
       h('div', { style: 'height:1px;margin:26px 0 18px;background:linear-gradient(to right,transparent,rgba(234,238,245,.2) 48px,rgba(234,238,245,.2) calc(100% - 48px),transparent)' }),
       h('div', { style: 'display:flex;gap:20px;align-items:center;font-size:11.5px;color:rgba(234,238,245,.5);flex-wrap:wrap' },
         h('span', { style: 'font-weight:600;color:rgba(234,238,245,.8)' }, BRAND),
@@ -491,6 +552,19 @@ export function renderLanding({ onStart, onPreview, onLogin } = {}) {
   return wrap;
 }
 
+function stepCard(n, t, d) {
+  return h('div', { class: 'step-card' },
+    h('div', { class: 'sc-num' }, n),
+    h('div', { class: 'sc-t' }, t),
+    h('div', { class: 'sc-d' }, d));
+}
+function vsCard(head, them, us) {
+  return h('div', { class: 'vs-card' },
+    h('div', { class: 'vs-head' }, head),
+    h('div', { class: 'vs-them' }, them),
+    h('div', { class: 'vs-us' }, us));
+}
+
 function section(title, ...body) {
   return h('div', { class: 'landing-section' }, h('h2', {}, title), ...body);
 }
@@ -501,7 +575,7 @@ function probCard(t, d) {
 }
 function feat(d, t, dsc) {
   return h('div', { class: 'feat' },
-    h('div', { class: 'ico' }, icon(d, { size: 16, stroke: '#1f6feb' })),
+    h('div', { class: 'ico' }, icon(d, { size: 16, stroke: 'var(--ap-pri-ink)' })),
     h('div', {}, h('div', { class: 'ft' }, t), h('div', { class: 'fd' }, dsc)));
 }
 function faq() {
@@ -510,6 +584,7 @@ function faq() {
     ['ตัวเลขที่ได้เป็นการรับประกันผลประโยชน์หรือไม่', 'ไม่ใช่ ทุกหน้าผลมีข้อความกำกับชัดเจนว่าเป็นการประมาณการเพื่อประกอบการวางแผน ไม่ใช่ตารางผลประโยชน์ของบริษัทประกัน'],
     ['ข้อมูลลูกค้าเก็บอย่างไร', 'ตัวแทนต้องได้รับความยินยอมจากลูกค้าก่อนบันทึกข้อมูลตามหลัก PDPA หน้าแชร์แสดงเฉพาะข้อมูลที่จำเป็น และลบผลวิเคราะห์ได้ตลอดเวลา'],
     ['ใช้บน iPad ระหว่างนัดลูกค้าได้ไหม', 'ออกแบบมาให้ใช้บน iPad และมือถือเป็นหลัก ฟอร์มแบ่งเป็น 6 ขั้นกรอกเร็ว'],
+    ['ราคาเท่าไหร่', 'เครื่องมือวิเคราะห์หลัก MANHA + Protection Gap + PDF + ลิงก์แชร์ ฟรีตลอดไป แพ็กเกจ Pro (สมุดลูกค้า + เตือน LINE) และ Team กำลังพัฒนา ผู้ใช้รุ่นแรกจะได้ราคา Founding ล็อกถาวร'],
   ];
   const box = h('div', {});
   items.forEach(([q, a], i) => {

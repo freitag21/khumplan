@@ -42,7 +42,7 @@ function route() {
   if (p.get('a')) return showShared(p.get('a'));
   if (p.get('edit')) return showEdit(p.get('edit'));
   const view = p.get('view');
-  if (view === 'landing') return mount(renderLanding({ onStart: () => nav('?view=quick'), onPreview: startSample, onLogin: () => nav('?view=auth') }), { bare: true });
+  if (view === 'landing') return showLanding();
   if (view === 'auth') return showAuth(p.get('m') || 'signin');
   if (view === 'dashboard') return showDashboard();
   if (view === 'support') return mount(renderSupport({ onBack: () => nav('?') }), { bare: true });
@@ -51,9 +51,18 @@ function route() {
   if (view === 'terms') return mount(renderTerms({ onBack: () => nav('?') }));
   if (view === 'privacy') return mount(renderPrivacy({ onBack: () => nav('?') }));
   if (view === 'quick') return showQuick();
-  // หน้าแรก: ยังไม่ล็อกอิน → หน้าเข้าสู่ระบบ · ล็อกอินแล้ว → เริ่มวิเคราะห์เลย
-  if (hasSupabase && !agent?.id) return showAuth('signin');
+  // หน้าแรก: ยังไม่ล็อกอิน → หน้า landing (ขายก่อน signup) · ล็อกอินแล้ว → เริ่มวิเคราะห์เลย
+  if (hasSupabase && !agent?.id) return showLanding();
   return showForm();
+}
+
+function showLanding() {
+  mount(renderLanding({
+    onStart: () => nav('?view=quick'),
+    onPreview: startSample,
+    onSignup: () => nav('?view=auth&m=signup'),
+    onLogin: () => nav('?view=auth'),
+  }), { bare: true });
 }
 
 /* ---------- shell ---------- */
