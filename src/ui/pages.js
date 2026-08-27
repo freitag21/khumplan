@@ -299,6 +299,7 @@ const field = (label, input) => h('div', { class: 'field ap-f', style: 'max-widt
 export function renderAuth(opts = {}) {
   const mode = opts.mode || 'signin';
   const main = h('div', { class: 'auth-main' });
+  main.append(h('div', { class: 'auth-mobile-brand' }, brand(22))); // โชว์เฉพาะจอมือถือ (aside ถูกซ่อน)
   const msg = h('div', { class: 'auth-fine' });
   const setMsg = (text, ok) => { msg.style.color = ok ? 'var(--ap-ok)' : 'var(--ap-bad)'; msg.textContent = text; };
   const busy = (btn, on) => { btn.disabled = on; btn.textContent = on ? 'กำลังดำเนินการ…' : btn.dataset.label; };

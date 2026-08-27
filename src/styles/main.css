@@ -657,6 +657,7 @@ select.input { appearance: none; background-image:
 .auth-aside .rule { height: 1px; margin: 22px 0; background: linear-gradient(to right, rgba(234, 238, 245, 0.2), transparent); }
 .auth-aside .fine { font-size: 11.5px; color: rgba(234, 238, 245, 0.45); line-height: 1.6; }
 .auth-main { padding: 44px 46px; display: flex; flex-direction: column; justify-content: center; }
+.auth-mobile-brand { display: none; }
 .auth-main h1 { font-size: 25px; }
 .auth-main .lede { font-size: 13px; color: var(--ap-ink2); margin: 6px 0 24px; line-height: 1.6; }
 .auth-main .field, .auth-main .btn { max-width: 340px; }
@@ -745,6 +746,8 @@ select.input { appearance: none; background-image:
   .field-grid { grid-template-columns: 1fr; }
   .auth-card { grid-template-columns: 1fr; }
   .auth-aside { display: none; }
+  .auth-main { padding: 30px 22px; }
+  .auth-mobile-brand { display: flex; margin-bottom: 22px; }
   .dash-grid { grid-template-columns: 1fr; }
   .dash-row { grid-template-columns: 1fr 70px 44px; }
   .dash-row .date, .dash-head span:nth-child(3), .dash-head span:nth-child(4) { display: none; }
