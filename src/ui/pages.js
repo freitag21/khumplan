@@ -1,5 +1,37 @@
-import { h, s, icon, brand, BRAND } from './dom.js';
+import { h, s, icon, brand, BRAND, SUPPORT } from './dom.js';
 import { ringGauge } from './charts.js';
+
+/* ---------------- Support the project ---------------- */
+
+export function renderSupport({ onBack } = {}) {
+  const chips = h('div', { class: 'support-nonpay' },
+    h('span', {}, 'หรือช่วยแบบไม่ต้องจ่าย:'),
+    h('span', { class: 'chip' }, 'บอกต่อเพื่อนตัวแทน'),
+    h('span', { class: 'chip' }, 'ส่ง feedback ให้เราปรับปรุง'),
+    h('span', { class: 'chip' }, 'ใช้แล้วรีวิวในกลุ่ม'));
+
+  const channels = h('div', { class: 'support-channels' });
+  if (SUPPORT.qrImage) {
+    channels.append(h('figure', { class: 'support-qr' },
+      h('img', { src: SUPPORT.qrImage, alt: 'QR สนับสนุนโปรเจค', width: 200, height: 200 }),
+      SUPPORT.qrCaption ? h('figcaption', {}, SUPPORT.qrCaption) : null));
+  }
+  (SUPPORT.links || []).forEach((l) =>
+    channels.append(h('a', { class: 'btn btn-primary', href: l.url, target: '_blank', rel: 'noopener' }, l.label, ' ↗')));
+  if (!channels.children.length) {
+    channels.append(h('div', { class: 'muted', style: 'font-size:13px' }, 'ช่องทางสนับสนุนกำลังจะเปิดเร็ว ๆ นี้'));
+  }
+
+  return h('div', { class: 'support-page' },
+    h('div', { class: 'support-hero' },
+      h('div', { class: 'support-cup' }, '☕'),
+      h('h1', {}, `สนับสนุน${BRAND === 'KhumPlan' ? 'คุ้มแพลน' : BRAND}`),
+      h('p', {}, `${BRAND === 'KhumPlan' ? 'คุ้มแพลน' : BRAND} ทำโดยตัวแทนคนเดียว เปิดให้ตัวแทนคนอื่นใช้ฟรี และตั้งใจให้ฟรีต่อไป`),
+      h('p', {}, 'ค่าโดเมนและเซิร์ฟเวอร์จ่ายเอง — ถ้าเครื่องมือนี้ช่วยให้คุณคุยกับลูกค้าง่ายขึ้นหรือปิดงานได้เร็วขึ้น เลี้ยงกาแฟกันสักแก้วก็ดีใจมาก ไม่บังคับเลย')),
+    h('div', { class: 'support-body' }, channels, chips,
+      h('div', { style: 'margin-top:22px' },
+        h('a', { href: '#', class: 'btn btn-ghost', onclick: (e) => { e.preventDefault(); onBack?.(); } }, '← กลับไปหน้าเครื่องมือ'))));
+}
 
 /* ---------------- Auth (email + password) ---------------- */
 

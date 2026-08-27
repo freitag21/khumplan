@@ -266,7 +266,30 @@ select.input { appearance: none; background-image:
 }
 @media print { .theme-toggle, .theme-toggle-float { display: none !important; } }
 
-.footer { text-align: center; font-size: 11.5px; color: var(--ap-ink2); padding: 22px; }
+.footer {
+  text-align: center; font-size: 11.5px; color: var(--ap-ink2); padding: 22px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.footer-support { font-size: 12px; color: var(--ap-ink2); text-decoration: none; }
+.footer-support:hover { color: var(--ap-pri); }
+
+/* support page */
+.support-page { max-width: 560px; margin: 24px auto; }
+.support-hero { text-align: center; padding: 8px 0 20px; }
+.support-cup { font-size: 40px; line-height: 1; }
+.support-hero h1 { font-size: 24px; margin: 12px 0 10px; }
+.support-hero p { font-size: 13.5px; color: var(--ap-ink2); line-height: 1.7; max-width: 460px; margin: 0 auto 8px; }
+.support-body { background: var(--ap-card); border: 1px solid var(--ap-line); border-radius: 14px; padding: 24px; box-shadow: var(--shadow-sm); }
+.support-channels { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.support-channels .btn { min-width: 220px; }
+.support-qr { margin: 0; text-align: center; }
+.support-qr img { border-radius: 10px; border: 1px solid var(--ap-line); background: #fff; padding: 8px; }
+.support-qr figcaption { font-size: 12px; color: var(--ap-ink2); margin-top: 8px; }
+.support-nonpay { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--ap-line); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; color: var(--ap-ink2); }
+.support-nonpay .chip { background: var(--ap-bg); border-radius: 20px; padding: 4px 11px; font-size: 11.5px; }
+
+.support-card { gap: 8px; }
+.support-card .btn { font-size: 12.5px; padding: 7px 12px; }
 
 /* ============================================================================
    Result page (Direction A)

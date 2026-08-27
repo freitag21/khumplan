@@ -1,4 +1,4 @@
-import { h, icon, ICONS } from './dom.js';
+import { h, icon, ICONS, SUPPORT } from './dom.js';
 import { scoreColor } from './charts.js';
 
 const g = (v) => (Number.isFinite(v) ? Math.round(v).toLocaleString('th-TH') : '-');
@@ -87,6 +87,13 @@ export function renderDashboard(opts = {}) {
           h('span', { class: 'tag p-warn', style: 'align-self:flex-start' }, 'Module B'),
           h('div', { style: 'font-size:13.5px;font-weight:600;margin-top:4px' }, 'เตือนต่ออายุทาง LINE'),
           h('div', { class: 'muted', style: 'font-size:12px;line-height:1.6' }, 'เว้นพื้นที่ไว้สำหรับกรมธรรม์ที่ใกล้ครบกำหนดชำระ และปุ่มส่งข้อความเตือนผ่าน LINE')),
+        SUPPORT.enabled
+          ? h('div', { class: 'card ap-g elev-sm support-card' },
+              h('div', { style: 'font-size:13.5px;font-weight:600' }, '☕ โปรเจคนี้ทำคนเดียว ฟรี'),
+              h('div', { class: 'muted', style: 'font-size:12px;line-height:1.6' }, 'ถ้าช่วยให้คุณทำงานง่ายขึ้น สนับสนุนค่ากาแฟกันได้ ไม่บังคับ'),
+              h('a', { class: 'btn btn-secondary', href: '?view=support', style: 'justify-content:center;margin-top:2px',
+                onclick: (e) => { e.preventDefault(); opts.onSupport?.(); } }, 'สนับสนุนโปรเจค'))
+          : null,
         h('div', { class: 'card ap-g elev-sm' },
           h('div', { style: 'font-size:13.5px;font-weight:600' }, 'โปรไฟล์ที่ลูกค้าเห็น'),
           h('div', { class: 'muted', style: 'font-size:11.5px;margin-bottom:4px' }, 'แสดงบนหัวรายงานและหน้าแชร์'),

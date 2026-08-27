@@ -2,6 +2,22 @@
 
 export const BRAND = 'KhumPlan'; // คุ้มแพลน — เปลี่ยนชื่อแบรนด์ที่เดียวจบ
 
+/**
+ * ช่องทางสนับสนุนโปรเจค — เติมค่าจริงตรงนี้ ส่วนไหนเว้นว่างจะถูกซ่อนอัตโนมัติ
+ * ปิดทั้งหมดได้ด้วย enabled: false
+ */
+export const SUPPORT = {
+  enabled: true,
+  qrImage: '', // เช่น '/support-qr.png' — วางไฟล์ QR พร้อมเพย์ไว้ใน public/
+  qrCaption: '', // ชื่อบัญชี/พร้อมเพย์ที่จะขึ้นใต้ QR
+  links: [
+    // { label: 'Ko-fi', url: 'https://ko-fi.com/xxxx' },
+    // { label: 'Buy Me a Coffee', url: 'https://buymeacoffee.com/xxxx' },
+  ],
+};
+export const hasSupport = () =>
+  SUPPORT.enabled && (SUPPORT.qrImage || (SUPPORT.links && SUPPORT.links.length));
+
 /** hyperscript: h('div', {class:'x', onclick:fn}, child, [children]) */
 export function h(tag, attrs = {}, ...kids) {
   const el = document.createElement(tag);
