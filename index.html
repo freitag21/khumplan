@@ -11,6 +11,13 @@
       href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <script>
+      // ตั้ง theme ก่อนวาดหน้า เพื่อไม่ให้จอกระพริบ
+      try {
+        var _t = localStorage.getItem('khumplan-theme');
+        if (_t === 'dark' || _t === 'light') document.documentElement.dataset.theme = _t;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="app"></div>

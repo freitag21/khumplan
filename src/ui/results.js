@@ -1,6 +1,7 @@
 import { h, icon, ICONS } from './dom.js';
 import { recommend } from '../lib/recommend.js';
 import { scoreGauge, sevRow, miniBars } from './charts.js';
+import { renderPyramid } from './pyramid.js';
 
 const STATUS = {
   none: { pill: 'ยังไม่มีความคุ้มครอง', cls: 'st-none', tag: 'p-bad' },
@@ -83,6 +84,9 @@ export function renderResults(result, opts = {}) {
       h('div', { class: 'strength-head' }, icon('M3 8.5l3.5 3.5L13 4', { size: 15, stroke: 'var(--ap-ok)', width: 1.8 }), 'จุดที่ทำไว้ดีแล้ว'),
       h('ul', {}, ...summary.strengths.map((s) => h('li', {}, s)))));
   }
+
+  /* financial pyramid */
+  wrap.append(renderPyramid(result));
 
   /* severity bars */
   const applicable = categories.filter((c) => c.applicable !== false);

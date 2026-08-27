@@ -64,3 +64,50 @@ export const ICONS = {
 export function brand(size = 22) {
   return h('div', { class: 'brand' }, logoMark(size), h('span', { class: 'brand-name' }, BRAND));
 }
+
+/* ---------------- theme ---------------- */
+
+const THEME_KEY = 'khumplan-theme';
+const prefersDark = () => window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+export function currentTheme() {
+  const set = document.documentElement.dataset.theme;
+  if (set === 'dark' || set === 'light') return set;
+  return prefersDark() ? 'dark' : 'light';
+}
+
+export function toggleTheme() {
+  const next = currentTheme() === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  return next;
+}
+
+/** ปุ่มสลับโหมดสว่าง/มืด สำหรับ topbar */
+export function themeToggle() {
+  const btn = h('button', { class: 'theme-toggle', title: 'สลับโหมดสว่าง / มืด', 'aria-label': 'สลับโหมด' });
+  const paint = () => {
+    const dark = currentTheme() === 'dark';
+    btn.innerHTML = '';
+    btn.append(dark ? sunIcon() : moonIcon());
+  };
+  btn.addEventListener('click', () => { toggleTheme(); paint(); });
+  paint();
+  return btn;
+}
+
+function moonIcon() {
+  return s('svg', { width: 16, height: 16, viewBox: '0 0 16 16', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.5 },
+    s('path', { d: 'M13 9.5A5.5 5.5 0 016.5 3 5.5 5.5 0 1013 9.5z', 'stroke-linejoin': 'round' }));
+}
+function sunIcon() {
+  const svg = s('svg', { width: 16, height: 16, viewBox: '0 0 16 16', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.5 });
+  svg.append(s('circle', { cx: 8, cy: 8, r: 3 }));
+  for (let i = 0; i < 8; i++) {
+    const a = (i * Math.PI) / 4;
+    const x1 = 8 + Math.cos(a) * 5, y1 = 8 + Math.sin(a) * 5;
+    const x2 = 8 + Math.cos(a) * 6.8, y2 = 8 + Math.sin(a) * 6.8;
+    svg.append(s('line', { x1, y1, x2, y2, 'stroke-linecap': 'round' }));
+  }
+  return svg;
+}

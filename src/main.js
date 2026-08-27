@@ -1,7 +1,7 @@
 import './styles/main.css';
 import { analyze } from './lib/needs.js';
 import { toNeedsInput } from './lib/questionnaire.js';
-import { h, brand, BRAND } from './ui/dom.js';
+import { h, brand, BRAND, themeToggle } from './ui/dom.js';
 import { buildForm } from './ui/form.js';
 import { renderResults } from './ui/results.js';
 import { renderManha } from './ui/manha.js';
@@ -55,6 +55,11 @@ function mount(node, { bare = false } = {}) {
   root.innerHTML = '';
   if (!bare) root.append(topbar());
   root.append(h('div', { class: 'page' }, node), footer());
+  if (bare) {
+    const t = themeToggle();
+    t.classList.add('theme-toggle-float');
+    root.append(t);
+  }
   window.scrollTo({ top: 0 });
 }
 
@@ -74,7 +79,8 @@ function topbar() {
     h('a', { class: 'topbar-link', href: '?view=quick', onclick: (e) => { e.preventDefault(); nav('?view=quick'); } }, 'คัดกรอง MANHA'),
     h('a', { class: 'topbar-link', href: '?', onclick: (e) => { e.preventDefault(); nav('?'); } }, 'Protection Gap'),
     h('a', { class: 'topbar-link', href: '?view=landing', onclick: (e) => { e.preventDefault(); nav('?view=landing'); } }, 'เกี่ยวกับ'),
-    ...right
+    ...right,
+    themeToggle()
   );
 }
 

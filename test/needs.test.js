@@ -3,6 +3,7 @@ import { analyze, analyzeLife, analyzeRetirement, analyzeHealth } from '../src/l
 import { marginalRate, taxOn, analyzeTax } from '../src/lib/tax.js';
 import { recommend } from '../src/lib/recommend.js';
 import { screenManha } from '../src/lib/manha.js';
+import { buildPyramid } from '../src/lib/pyramid.js';
 
 const base = {
   clientName: 'ทดสอบ', age: 35, sex: 'M', maritalStatus: 'married', occupation: 'พนักงานบริษัทเอกชน',
@@ -161,5 +162,28 @@ describe('screenManha', () => {
   it('มีคนแนะนำ → ดันขึ้นต้นคิว', () => {
     const r = screenManha({ money: 'ok', authority: 'self', need: 'clear', health: 'healthy', age: 35, source: 'referral' });
     expect(r.queue).toBe('ดันขึ้นต้นคิว');
+  });
+});
+
+describe('buildPyramid', () => {
+  it('คืน 3 ชั้น + currentTier ชี้ชั้นที่ยังไม่ solid', () => {
+    const p = buildPyramid(analyze(base));
+    expect(p.tiers).toHaveLength(3);
+    expect(p.tiers[2].informational).toBe(true);
+    expect(p.currentTier).toBeGreaterThanOrEqual(0);
+    expect(p.tiers[p.currentTier].status).not.toBe('solid');
+  });
+  it('ลูกค้าคุ้มครองครบ → ชั้นรากฐาน solid, headline พูดถึงชั้นบน', () => {
+    const rich = analyze({
+      ...base, existingHealthRoom: 8000, existingHealthAnnual: 30000000, existingCiSum: 5000000,
+      existingLifeSum: 30000000, existingPaSum: 10000000, liquidAssets: 3000000,
+      hasDisabilityIncome: true, disabilityBenefitMonthly: 40000,
+    });
+    const p = buildPyramid(rich);
+    expect(p.tiers[0].status).toBe('solid');
+  });
+  it('ไม่มีบุตร → ชั้นสร้างความมั่นคงไม่มีรายการทุนการศึกษา', () => {
+    const p = buildPyramid(analyze({ ...base, children: [] }));
+    expect(p.tiers[1].items.some((i) => i.label.includes('การศึกษา'))).toBe(false);
   });
 });
