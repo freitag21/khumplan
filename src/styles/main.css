@@ -1,7 +1,8 @@
 /* ============================================================================
-   AgentPlan — "Nocturne" design system, retuned to the light palette.
+   คุ้มแพลน (KhumPlan) — "Nocturne" design system, retuned to the light palette.
    Source: Claude Design canvas (UI mockups for Nocturne light palette).
    Plain CSS on plain HTML. Retune tokens here.
+   หมายเหตุ: prefix `--ap-` / `.ap-*` เป็นชื่อภายในจากตอนโปรเจคชื่อ AgentPlan — ไม่กระทบผู้ใช้
    ========================================================================== */
 
 :root {

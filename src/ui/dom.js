@@ -1,6 +1,6 @@
 /** DOM helpers + shared brand bits */
 
-export const BRAND = 'AgentPlan'; // ชื่อชั่วคราว — เปลี่ยนที่เดียวจบ
+export const BRAND = 'KhumPlan'; // คุ้มแพลน — เปลี่ยนชื่อแบรนด์ที่เดียวจบ
 
 /** hyperscript: h('div', {class:'x', onclick:fn}, child, [children]) */
 export function h(tag, attrs = {}, ...kids) {

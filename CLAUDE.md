@@ -1,9 +1,9 @@
-# AgentPlan — project conventions
+# คุ้มแพลน (KhumPlan) — project conventions
 
 ## โปรเจคนี้คืออะไร
 
 เครื่องมือสำหรับตัวแทนประกัน (ชีวิต/สุขภาพ/สะสมทรัพย์/ยูนิตลิงก์) เจ้าของโปรเจคเป็นตัวแทนเอง
-**แยกขาดจาก ChanSpace** — คนละ repo คนละโดเมน
+ชื่อ **คุ้มแพลน / KhumPlan** ("คุ้ม" = คุ้มครอง + คุ้มค่า) · โดเมนเป้าหมาย khumplan.com · **แยกขาดจาก ChanSpace**
 
 - **Module A** (กำลังทำ): แบบสอบถาม (ตัวแทนกรอกเอง) → อินโฟกราฟิก Protection Gap + ประเภทประกันที่ควรพิจารณา + สิทธิลดหย่อนภาษี
 - **Module B** (ถัดไป): สมุดลูกค้าส่วนตัว + เตือนต่ออายุ/วันเกิด (LINE) + โอกาส resale
@@ -32,6 +32,6 @@ mockup ต้นฉบับ + โน้ตอยู่ใน `design/`
 ## Cross-machine memory
 
 โปรเจคนี้ทำจากหลายเครื่อง (Windows + Mac) memory ของ Claude ไม่ sync เอง
-มิเรอร์ memory ที่เกี่ยวกับโปรเจคนี้ไว้ที่ Google Drive `ClaudeMemory/AgentPlan/`
-(`G:\My Drive\ClaudeMemory\AgentPlan\` บน Windows) — ต้นเซสชันให้อ่าน `MEMORY.md` ที่นั่นก่อน
+มิเรอร์ memory ที่เกี่ยวกับโปรเจคนี้ไว้ที่ Google Drive `ClaudeMemory/KhumPlan/`
+(`G:\My Drive\ClaudeMemory\KhumPlan\` บน Windows) — ต้นเซสชันให้อ่าน `MEMORY.md` ที่นั่นก่อน
 หลังบันทึก memory ใหม่ ให้ก๊อปเข้าโฟลเดอร์นั้นด้วย

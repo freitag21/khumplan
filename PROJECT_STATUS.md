@@ -1,4 +1,4 @@
-# AgentPlan — สถานะโปรเจค
+# KhumPlan — สถานะโปรเจค
 
 อัปเดต: 2026-08-28
 
@@ -9,7 +9,7 @@
 - Module A: ตัวแทนกรอกแบบสอบถามเอง
 - Stack: Vite vanilla + Supabase + **Vercel**
 - ดีไซน์: ระบบ "Nocturne" (light palette) จาก Claude Design — `design/DESIGN_NOTES.md`
-- ชื่อ: ยังไม่เคาะ — "AgentPlan" ชั่วคราว (`BRAND` ใน `src/ui/dom.js`)
+- ชื่อ: ยังไม่เคาะ — "KhumPlan" ชั่วคราว (`BRAND` ใน `src/ui/dom.js`)
   · AgentMap: .com/.co/.xyz โดนนักเก็งกำไร, .app เป็นทูลตัวแทนอสังหาฯ AU/NZ · `.io`/`.pro` ยังว่าง
 
 ## ทำเสร็จแล้ว

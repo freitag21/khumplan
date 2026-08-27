@@ -1,9 +1,9 @@
 {
-  "name": "agentplan",
+  "name": "khumplan",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "เครื่องมือสำหรับตัวแทนประกันชีวิต/สุขภาพ/สะสมทรัพย์ — Module A: วิเคราะห์ Protection Gap",
+  "description": "คุ้มแพลน (KhumPlan) — เครื่องมือสำหรับตัวแทนประกันชีวิต/สุขภาพ/สะสมทรัพย์ · Module A: คัดกรอง MANHA + วิเคราะห์ Protection Gap",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

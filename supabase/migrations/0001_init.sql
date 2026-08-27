@@ -1,4 +1,4 @@
--- AgentPlan — Module A schema
+-- คุ้มแพลน (KhumPlan) — Module A schema
 -- รันใน Supabase SQL Editor (หรือ supabase db push)
 --
 -- หลักการความเป็นส่วนตัว:

@@ -1,4 +1,4 @@
-# AgentPlan — Design system ("Nocturne", light palette)
+# KhumPlan — Design system ("Nocturne", light palette)
 
 ที่มา: Claude Design canvas — "UI mockups for Nocturne light palette"
 artifact: https://claude.ai/code/artifact/584ea1f4-8111-4113-9525-79b92f1ba92b
@@ -30,5 +30,5 @@ artifact: https://claude.ai/code/artifact/584ea1f4-8111-4113-9525-79b92f1ba92b
 ## ชื่อ/โลโก้
 
 Claude Design เสนอชื่อสำรอง: "ปกป้อง พลัส" / "Gapview" / "Planway"
-ตอนนี้โค้ดใช้ `BRAND = 'AgentPlan'` (ค่าเดียวใน `src/ui/dom.js`) — เปลี่ยนที่เดียว
+ตอนนี้โค้ดใช้ `BRAND = 'KhumPlan'` (ค่าเดียวใน `src/ui/dom.js`) — เปลี่ยนที่เดียว
 โลโก้: สี่เหลี่ยมมนสีน้ำเงิน + เส้นหลังคาบ้าน (ดู `logoMark()` ใน `dom.js`)
