@@ -461,24 +461,31 @@ select.input { appearance: none; background-image:
    Financial pyramid
    ========================================================================== */
 
-.pyr-body { display: grid; grid-template-columns: 340px 1fr; gap: 22px; align-items: center; }
+.pyr-body { display: grid; grid-template-columns: minmax(280px, 380px) 1fr; gap: 26px; align-items: center; }
 .pyr-svg-wrap { display: grid; place-items: center; }
-.pyr-svg { width: 100%; max-width: 340px; height: auto; overflow: visible; }
-.pyr-label { font-size: 12.5px; font-weight: 600; fill: #fff; }
-.pyr-label.info { font-size: 11px; fill: var(--ap-ink); }
-.pyr-label-sub { font-size: 11px; fill: rgba(255, 255, 255, 0.85); font-family: var(--ap-num); }
-.pyr-here { font-size: 10.5px; font-weight: 600; fill: var(--ap-pri); }
+.pyr-svg { width: 100%; max-width: 380px; height: auto; overflow: visible; }
 
-.pyr-tiers { display: flex; flex-direction: column; gap: 10px; }
-.pyr-tier { border-left: 3px solid var(--ap-line); padding: 2px 0 2px 12px; }
+.pyr-name { font-size: 12.5px; font-weight: 600; fill: #fff; letter-spacing: 0.01em; }
+.pyr-name.info { font-size: 11px; font-weight: 600; fill: var(--ap-ink); }
+.pyr-pct-t { font-size: 11px; fill: rgba(255, 255, 255, 0.8); font-family: var(--ap-num); }
+.pyr-pill-t { font-size: 10px; font-weight: 700; fill: #fff; letter-spacing: 0.02em; }
+.pyr-tier-g.is-focus { filter: drop-shadow(0 3px 10px color-mix(in srgb, var(--ap-pri) 45%, transparent)); }
+
+.pyr-tiers { display: flex; flex-direction: column; gap: 4px; }
+.pyr-tier { border-left: 3px solid var(--ap-line); padding: 8px 0 8px 13px; border-radius: 0 8px 8px 0; }
 .pyr-tier.st-solid { border-left-color: var(--ap-ok); }
 .pyr-tier.st-building { border-left-color: var(--ap-warn); }
 .pyr-tier.st-weak { border-left-color: var(--ap-bad); }
 .pyr-tier.st-info { border-left-color: var(--pyr-info); }
+.pyr-tier.is-focus { background: color-mix(in srgb, var(--ap-pri) 7%, transparent); }
 .pt-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.pt-head strong { font-size: 13.5px; }
-.pt-pct { font-size: 12px; font-weight: 600; font-family: var(--ap-num); }
-.pt-sub { font-size: 11px; color: var(--ap-ink2); margin-bottom: 4px; }
+.pt-head strong { font-size: 13.5px; display: flex; align-items: center; gap: 7px; }
+.pt-focus-tag {
+  font-size: 9.5px; font-weight: 600; letter-spacing: 0.02em;
+  background: var(--ap-pri); color: #fff; padding: 2px 7px; border-radius: 20px;
+}
+.pt-pct { font-size: 12.5px; font-weight: 600; font-family: var(--ap-num); }
+.pt-sub { font-size: 11px; color: var(--ap-ink2); margin: 1px 0 5px; }
 .pyr-tier ul { list-style: none; margin: 0; padding: 0; }
 .pyr-tier li { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 2px 0; color: var(--ap-ink); }
 .pt-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
