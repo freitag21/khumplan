@@ -20,6 +20,8 @@
 | `3659858` | หน้า "ข้อกำหนดการใช้งาน" + "นโยบายความเป็นส่วนตัว (PDPA)" |
 | `e2222ee` | หน้าแรก (root) แสดงหน้า Log in เมื่อยังไม่ล็อกอิน |
 | `51b6e8a` | บังคับติ๊กยอมรับ Policy ตอนสมัคร + เก็บ `policy_accepted_at`/`_version` |
+| `22d4489` | เพิ่ม `DEPLOYMENT_LOG.md` |
+| `1dffcb3` | แก้โลโก้ KhumPlan หายในหน้า auth บนมือถือ (จอ < 820px) |
 
 ### GitHub
 - สร้าง repo `github.com/freitag21/khumplan` แล้ว push ทั้งหมด (branch `main`)

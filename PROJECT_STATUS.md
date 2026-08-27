@@ -1,6 +1,6 @@
 # KhumPlan — สถานะโปรเจค
 
-อัปเดต: 2026-08-28
+อัปเดต: 2026-08-27 · **สถานะ: เปิดใช้งานจริงแล้ว (LIVE) — https://khumplan.com**
 
 ## ตัดสินใจแล้ว
 
@@ -60,19 +60,23 @@
 
 **หน้าผล:** คะแนนเป็นระดับคำ (เริ่มต้น/กำลังสร้าง/ค่อนข้างครบ/ครบถ้วน) + coverage ถ่วงน้ำหนัก · การ์ด "จุดที่ทำไว้ดีแล้ว" (เขียว) · แบดจ์มีเลขใบอนุญาต · disclaimer + สมมติฐานที่ปรับพิมพ์ลงท้ายรายงาน
 
-### รอบล่าสุด (2026-08-27)
-- แก้ layout พิมพ์ A4 พัง (Chrome ยุบ grid `1fr` ตอนพิมพ์ → เปลี่ยนเป็น flexbox) — พอดี 1 หน้า
+### รอบล่าสุด (2026-08-27) — deploy + launch
+- แก้ layout พิมพ์ A4 พัง (Chrome ยุบ grid `1fr` ตอนพิมพ์ → flexbox) — พอดี 1 หน้า
 - เตือนเมื่อเปิดหน้าผลใน in-app browser ของ LINE (ปุ่มพิมพ์มักไม่ทำงานบน Android)
-- หน้า **วิธีใช้** (`?view=guide`) + **ติดต่อเรา** (`?view=contact`) + config `CONTACT` ใน `dom.js`
-- `DEPLOY.md` — ขั้นตอน deploy Vercel ครบ
+- หน้า **วิธีใช้** · **ติดต่อเรา** · **ข้อกำหนดการใช้งาน** · **นโยบายความเป็นส่วนตัว (PDPA)** + config `CONTACT`
+- หน้าแรก (root) แสดงหน้า Log in เมื่อยังไม่ล็อกอิน
+- บังคับติ๊กยอมรับ Policy ตอนสมัคร + เก็บ `policy_accepted_at`/`_version` ใน user metadata
+- แก้โลโก้หายในหน้า auth บนมือถือ
+- **Deploy จริง**: GitHub `freitag21/khumplan` → Vercel (team AI SmartWork / Hobby, auto-deploy) → `khumplan.com` + `www` redirect + HTTPS (DNS ที่ Cloudflare, CNAME flattening ที่ apex)
+- Supabase Auth URL Config อัปเดต (Site URL + Redirect URLs) · **"Confirm email" ปิดชั่วคราว** ให้ตัวแทนสมัครได้ทันที
+- ดู `DEPLOYMENT_LOG.md` สำหรับรายละเอียดทั้งหมด
 
-## ยังไม่ได้ทำ
+## ยังไม่ได้ทำ / เปิดไว้ทีหลัง
 
-- **ทบทวนสมมติฐานที่ปรับแล้วกับกลุ่มตัวแทนอีกรอบ** — ตัวเลขจาก Win คนเดียว
-- หน้าผลทิศทาง B/C · แบดจ์ตัวแทน sticky บนมือถือ (1e) · Module B (สมุดกรมธรรม์ + เตือน LINE) · Module C
-- หน้า ข้อกำหนด/นโยบายความเป็นส่วนตัว (ตอนนี้ลิงก์ #)
-- **deploy: ยังไม่ขึ้น GitHub + ยังไม่เชื่อม Vercel** (ดู `DEPLOY.md`) · โดเมน khumplan.com กำลังจะซื้อ
-- หลัง deploy: เปิด Confirm email ใน Supabase + เพิ่มโดเมนใน Auth URL Configuration
+- **Custom SMTP (Resend)** — จำเป็นให้ "ยืนยันอีเมล" + "ลืมรหัสผ่าน" ทำงานจริง แล้วเปิด Confirm email กลับ
+- **ทบทวนสมมติฐานกับกลุ่มตัวแทนอีกรอบ** — ตัวเลขจาก Win คนเดียว
+- หน้าผลทิศทาง B/C · แบดจ์ตัวแทน sticky บนมือถือ · Module B (สมุดกรมธรรม์ + เตือน LINE) · Module C
+- (เลือกได้) redirect www เป็น 308 permanent แทน 307
 
 ## รีวิวของ Win — ข้อที่ยังค้าง (ทำต่อได้)
 
