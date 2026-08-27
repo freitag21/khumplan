@@ -51,6 +51,8 @@ function route() {
   if (view === 'terms') return mount(renderTerms({ onBack: () => nav('?') }));
   if (view === 'privacy') return mount(renderPrivacy({ onBack: () => nav('?') }));
   if (view === 'quick') return showQuick();
+  // หน้าแรก: ยังไม่ล็อกอิน → หน้าเข้าสู่ระบบ · ล็อกอินแล้ว → เริ่มวิเคราะห์เลย
+  if (hasSupabase && !agent?.id) return showAuth('signin');
   return showForm();
 }
 
@@ -109,7 +111,7 @@ function showAuth(mode) {
   const node = renderAuth({
     mode,
     onSwitch: (m) => nav('?view=auth' + (m === 'signin' ? '' : `&m=${m}`)),
-    onBack: () => nav('?'),
+    onBack: () => nav('?view=quick'),
     onSignUp: (creds) => signUp(creds),
     onSignIn: async (creds) => { await signIn(creds); /* onAuthChange จะพาไป dashboard */ },
     onReset: (email) => sendPasswordReset(email),
