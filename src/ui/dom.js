@@ -17,8 +17,8 @@ export const SUPPORT = {
 export const hasSupport = () =>
   SUPPORT.enabled && (SUPPORT.qrImage || (SUPPORT.links && SUPPORT.links.length));
 
-/** ตั้ง true เมื่อเชื่อม custom SMTP (Resend) ใน Supabase แล้ว — เปิดฟีเจอร์ "ลืมรหัสผ่าน" / ยืนยันอีเมล */
-export const EMAIL_ENABLED = false;
+/** true = เชื่อม custom SMTP (Resend) ใน Supabase แล้ว → เปิดฟีเจอร์ "ลืมรหัสผ่าน" / ยืนยันอีเมล */
+export const EMAIL_ENABLED = true;
 
 /**
  * ช่องทางติดต่อ — แก้ค่าตรงนี้ที่เดียว ช่องไหนเว้นว่าง (null) จะถูกซ่อน
