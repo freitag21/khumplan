@@ -5,7 +5,7 @@ import { h, brand, BRAND, themeToggle, SUPPORT } from './ui/dom.js';
 import { buildForm } from './ui/form.js';
 import { renderResults } from './ui/results.js';
 import { renderManha } from './ui/manha.js';
-import { renderAuth, renderLanding, renderSupport } from './ui/pages.js';
+import { renderAuth, renderLanding, renderSupport, renderGuide, renderContact } from './ui/pages.js';
 import { renderDashboard } from './ui/dashboard.js';
 import { hasSupabase } from './supabase.js';
 import { getAgentProfile, signUp, signIn, sendPasswordReset, updatePassword, signOut, onAuthChange } from './auth.js';
@@ -46,6 +46,8 @@ function route() {
   if (view === 'auth') return showAuth(p.get('m') || 'signin');
   if (view === 'dashboard') return showDashboard();
   if (view === 'support') return mount(renderSupport({ onBack: () => nav('?') }), { bare: true });
+  if (view === 'guide') return mount(renderGuide({ onBack: () => nav('?'), onStart: () => nav('?view=quick') }));
+  if (view === 'contact') return mount(renderContact({ onBack: () => nav('?'), onSupport: SUPPORT.enabled ? () => nav('?view=support') : null }));
   if (view === 'quick') return showQuick();
   return showForm();
 }
@@ -80,16 +82,22 @@ function topbar() {
     h('a', { class: 'topbar-link', href: '?view=quick', onclick: (e) => { e.preventDefault(); nav('?view=quick'); } }, 'คัดกรอง MANHA'),
     h('a', { class: 'topbar-link', href: '?', onclick: (e) => { e.preventDefault(); nav('?'); } }, 'Protection Gap'),
     h('a', { class: 'topbar-link', href: '?view=landing', onclick: (e) => { e.preventDefault(); nav('?view=landing'); } }, 'เกี่ยวกับ'),
+    h('a', { class: 'topbar-link', href: '?view=guide', onclick: (e) => { e.preventDefault(); nav('?view=guide'); } }, 'วิธีใช้'),
     ...right,
     themeToggle()
   );
 }
 
+const footerLink = (label, search) => h('a', { class: 'footer-link', href: search, onclick: (e) => { e.preventDefault(); nav(search); } }, label);
+
 const footer = () => h('div', { class: 'footer ap-noprint' },
   h('span', {}, `${BRAND} · Module A — วิเคราะห์ความต้องการความคุ้มครอง (ประมาณการ ไม่ใช่คำแนะนำเฉพาะบุคคล)`),
-  SUPPORT.enabled
-    ? h('a', { class: 'footer-support', href: '?view=support', onclick: (e) => { e.preventDefault(); nav('?view=support'); } }, '☕ สนับสนุนโปรเจค')
-    : null);
+  h('span', { class: 'footer-links' },
+    footerLink('วิธีใช้', '?view=guide'),
+    footerLink('ติดต่อเรา', '?view=contact'),
+    SUPPORT.enabled
+      ? h('a', { class: 'footer-support', href: '?view=support', onclick: (e) => { e.preventDefault(); nav('?view=support'); } }, '☕ สนับสนุนโปรเจค')
+      : null));
 
 /* ---------- auth ---------- */
 

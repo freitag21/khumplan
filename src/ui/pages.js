@@ -1,5 +1,7 @@
-import { h, s, icon, brand, BRAND, SUPPORT } from './dom.js';
+import { h, s, icon, brand, BRAND, SUPPORT, CONTACT } from './dom.js';
 import { ringGauge } from './charts.js';
+
+const BRAND_TH = BRAND === 'KhumPlan' ? 'คุ้มแพลน' : BRAND;
 
 /* ---------------- Support the project ---------------- */
 
@@ -31,6 +33,98 @@ export function renderSupport({ onBack } = {}) {
     h('div', { class: 'support-body' }, channels, chips,
       h('div', { style: 'margin-top:22px' },
         h('a', { href: '#', class: 'btn btn-ghost', onclick: (e) => { e.preventDefault(); onBack?.(); } }, '← กลับไปหน้าเครื่องมือ'))));
+}
+
+/* ---------------- วิธีใช้ ---------------- */
+
+const GUIDE_STEPS = [
+  ['คัดกรองผู้มุ่งหวังก่อน (ถ้ายังไม่แน่ใจ)',
+    'เปิดเมนู "คัดกรอง MANHA" ตอบ 5 ข้อสั้น ๆ (เงิน · อำนาจตัดสินใจ · ความจำเป็น · สุขภาพ · อายุ) ระบบบอกว่าควรเดินหน้าต่อเลย หรือเก็บไว้ตามภายหลัง แล้วส่งข้อมูลที่กรอกไปหน้าแบบสอบถามให้อัตโนมัติ'],
+  ['กรอกแบบสอบถาม 6 ขั้น จากบทสนทนากับลูกค้า',
+    'ข้อมูลตัวลูกค้า · รายได้และภาระ · ครอบครัวและผู้อยู่ในอุปการะ · ความคุ้มครองที่มีอยู่ (ประกัน กลุ่ม กองทุน) · เป้าหมายเกษียณและการศึกษาบุตร · ภาษี ใช้เวลาประมาณ 3 นาที กรอกเท่าที่รู้ก่อนได้ ช่องที่เว้นไว้ระบบจะใช้ค่ามาตรฐาน'],
+  ['อ่านหน้าสรุป Protection Gap ไปพร้อมลูกค้า',
+    'หน้าสรุปนำด้วย "ก้าวแรก" — ด้านที่ควรเริ่มก่อนและทุนที่ยังขาด ตามด้วยตาราง 6 ด้าน (มีอยู่ / ควรมี / ช่องว่าง) พีระมิดการเงิน จุดแข็งที่ลูกค้าทำไว้ดีแล้ว ประเภทประกันที่ควรพิจารณา และสิทธิลดหย่อนภาษีที่เหลือ'],
+  ['พิมพ์ PDF หรือส่งลิงก์ให้ลูกค้า',
+    'กด "พิมพ์ / บันทึก PDF" ได้รายงาน A4 หน้าเดียว มีชื่อและเลขใบอนุญาตของคุณบนหัวกระดาษ — หรือกด "บันทึกผลวิเคราะห์" เพื่อสร้างลิงก์อ่านอย่างเดียว (อายุ 90 วัน) ส่งให้ลูกค้าไปคุยต่อกับคู่สมรส'],
+  ['บันทึกเข้าสมุดลูกค้า (ต้องเข้าสู่ระบบ)',
+    'สมัครด้วยอีเมลและรหัสผ่าน ก่อนบันทึกต้องยืนยันว่าได้แจ้งวัตถุประสงค์และได้รับความยินยอมจากลูกค้าแล้ว (PDPA) — คุณเป็นผู้ควบคุมข้อมูล ระบบไม่แชร์ข้อมูลลูกค้าให้ตัวแทนคนอื่น'],
+  ['กลับมาเปิด แก้ไข หรือลบ ในแดชบอร์ด',
+    'แดชบอร์ดรวมผลวิเคราะห์ลูกค้าทุกคน ค้นหา เปิดดู แก้ไขแล้วบันทึกทับ หรือลบทิ้ง (ลิงก์แชร์จะหยุดทำงานทันที) พร้อมสถิติการใช้งานรายเดือนและโปรไฟล์ตัวแทนที่แก้ได้'],
+];
+
+const GUIDE_TIPS = [
+  ['ปรับสมมติฐานรายเคสได้', 'ในแบบสอบถามมีแผงปรับอัตราเงินเฟ้อ ผลตอบแทน และอายุคาดหมาย ถ้าเคสไหนต้องใช้สมมติฐานต่างจากค่ากลาง'],
+  ['โหมดมืด', 'ปุ่มรูปพระอาทิตย์/พระจันทร์มุมขวาบน สลับสว่าง–มืด (เวลาพิมพ์ระบบบังคับเป็นโหมดสว่างให้เอง)'],
+  ['เปิดจากแอป LINE', 'ถ้าเปิดลิงก์ในเบราว์เซอร์ของแอป LINE โดยเฉพาะบน Android ปุ่มบันทึก PDF อาจไม่ทำงาน ให้กด "เปิดในเบราว์เซอร์" (Chrome/Safari) ก่อน'],
+  ['ใช้บน iPad ระหว่างนัด', 'ออกแบบให้กรอกบนมือถือและ iPad ได้ กรอกทีละขั้น เลื่อนขึ้นบนสุดอัตโนมัติเมื่อเปลี่ยนขั้น'],
+];
+
+export function renderGuide({ onBack, onStart } = {}) {
+  const steps = h('ol', { class: 'guide-steps' });
+  GUIDE_STEPS.forEach(([t, d], i) => {
+    steps.append(h('li', {},
+      h('div', { class: 'gs-num' }, String(i + 1)),
+      h('div', {}, h('div', { class: 'gs-t' }, t), h('div', { class: 'gs-d' }, d))));
+  });
+
+  const tips = h('div', { class: 'guide-tips' });
+  GUIDE_TIPS.forEach(([t, d]) => {
+    tips.append(h('div', { class: 'guide-tip' },
+      h('div', { class: 'gt-t' }, t), h('div', { class: 'gt-d' }, d)));
+  });
+
+  return h('div', { class: 'doc-page' },
+    h('div', { class: 'doc-head' },
+      h('h1', {}, 'วิธีใช้'),
+      h('p', {}, `${BRAND_TH} ช่วยสรุปบทสนทนากับลูกค้าเป็นอินโฟกราฟิก Protection Gap ในหน้าเดียว — ใช้ได้ตั้งแต่คัดกรองผู้มุ่งหวังจนถึงส่งรายงานให้ลูกค้า`)),
+    steps,
+    h('h2', { class: 'doc-h2' }, 'เคล็ดลับการใช้งาน'),
+    tips,
+    h('div', { class: 'doc-note' },
+      h('b', {}, 'ข้อควรทราบ: '),
+      `ตัวเลขทั้งหมดเป็นการประมาณการเพื่อประกอบการวางแผน ไม่ใช่ตารางผลประโยชน์ของบริษัทประกัน และไม่ใช่การเสนอขายกรมธรรม์ การเลือกแบบประกันและบริษัทเป็นบทบาทของตัวแทน`),
+    h('div', { class: 'doc-actions' },
+      onStart ? h('button', { class: 'btn btn-primary ap-fill', onclick: () => onStart() }, 'เริ่มวิเคราะห์') : null,
+      h('a', { href: '#', class: 'btn btn-ghost', onclick: (e) => { e.preventDefault(); onBack?.(); } }, '← กลับไปหน้าเครื่องมือ')));
+}
+
+/* ---------------- ติดต่อเรา ---------------- */
+
+export function renderContact({ onBack, onSupport } = {}) {
+  const rows = h('div', { class: 'contact-rows' });
+  if (CONTACT.email) {
+    rows.append(contactRow('อีเมล', CONTACT.email,
+      h('a', { class: 'btn btn-secondary', href: `mailto:${CONTACT.email}` }, 'ส่งอีเมล')));
+  }
+  if (CONTACT.lineUrl || CONTACT.lineId) {
+    rows.append(contactRow('LINE', CONTACT.lineId || 'เพิ่มเพื่อน',
+      CONTACT.lineUrl ? h('a', { class: 'btn btn-secondary', href: CONTACT.lineUrl, target: '_blank', rel: 'noopener' }, 'เปิด LINE ↗') : null));
+  }
+  if (CONTACT.facebookUrl) {
+    rows.append(contactRow('Facebook', 'เพจ ' + BRAND_TH,
+      h('a', { class: 'btn btn-secondary', href: CONTACT.facebookUrl, target: '_blank', rel: 'noopener' }, 'เปิดเพจ ↗')));
+  }
+
+  return h('div', { class: 'doc-page' },
+    h('div', { class: 'doc-head' },
+      h('h1', {}, 'ติดต่อเรา'),
+      h('p', {}, `มีคำถาม เจอบั๊ก หรืออยากเสนอฟีเจอร์ — ยินดีรับฟังทุกเรื่อง ${BRAND_TH} พัฒนาจาก feedback ของตัวแทนที่ใช้งานจริง`)),
+    rows,
+    CONTACT.responseNote ? h('div', { class: 'doc-note' }, CONTACT.responseNote) : null,
+    h('h2', { class: 'doc-h2' }, 'ช่วยกันพัฒนา'),
+    h('ul', { class: 'contact-list' },
+      h('li', {}, 'แจ้งบั๊กหรือผลคำนวณที่ดูผิดปกติ พร้อมข้อมูลที่กรอก (ไม่ต้องมีชื่อลูกค้าจริง)'),
+      h('li', {}, 'เสนอฟีเจอร์หรือด้านความคุ้มครองที่อยากให้เพิ่ม'),
+      h('li', {}, 'บอกต่อเพื่อนตัวแทนที่น่าจะได้ใช้ประโยชน์')),
+    h('div', { class: 'doc-actions' },
+      onSupport ? h('a', { href: '#', class: 'btn btn-secondary', onclick: (e) => { e.preventDefault(); onSupport(); } }, '☕ สนับสนุนโปรเจค') : null,
+      h('a', { href: '#', class: 'btn btn-ghost', onclick: (e) => { e.preventDefault(); onBack?.(); } }, '← กลับไปหน้าเครื่องมือ')));
+}
+
+function contactRow(label, value, action) {
+  return h('div', { class: 'contact-row' },
+    h('div', {}, h('div', { class: 'cr-label' }, label), h('div', { class: 'cr-value n' }, value)),
+    action || h('span', {}));
 }
 
 /* ---------------- Auth (email + password) ---------------- */
@@ -193,7 +287,9 @@ export function renderLanding({ onStart, onPreview, onLogin } = {}) {
       h('div', { style: 'height:1px;margin:26px 0 18px;background:linear-gradient(to right,transparent,rgba(234,238,245,.2) 48px,rgba(234,238,245,.2) calc(100% - 48px),transparent)' }),
       h('div', { style: 'display:flex;gap:20px;align-items:center;font-size:11.5px;color:rgba(234,238,245,.5);flex-wrap:wrap' },
         h('span', { style: 'font-weight:600;color:rgba(234,238,245,.8)' }, BRAND),
-        h('span', {}, 'ข้อกำหนดการใช้งาน'), h('span', {}, 'นโยบายความเป็นส่วนตัว (PDPA)'), h('span', {}, 'ติดต่อ'),
+        h('a', { class: 'foot-a', href: '?view=guide' }, 'วิธีใช้'),
+        h('span', {}, 'ข้อกำหนดการใช้งาน'), h('span', {}, 'นโยบายความเป็นส่วนตัว (PDPA)'),
+        h('a', { class: 'foot-a', href: '?view=contact' }, 'ติดต่อเรา'),
         h('span', { style: 'margin-left:auto' }, 'เครื่องมือช่วยวางแผน ไม่ใช่การเสนอขายผลิตภัณฑ์ประกันภัย'))
     )
   );
