@@ -48,8 +48,18 @@
 - งานติดตาม: ปุ่ม "ไม่สนใจ" บนธง resale → `dismissResale()` เขียน reminder แบบ done กันธงเด้ง ~6 เดือน
 - งานติดตาม: section ใหม่ "ผู้มุ่งหวังที่เงียบเกิน 2 ปี" (`staleProspects` — สร้าง > 24 เดือน ไม่มีการติดต่อ ไม่มีงานค้าง) → เตือนขอ consent ใหม่หรือลบ (PDPA)
 
-migration 0006 + 0007 + 0008 รันแล้ว (Claude รันผ่าน Chrome · verified: policies 25 cols, clients 19, interactions 7). ทั้ง 4 รอบ push + deploy แล้ว
-**ยังไม่ทำจากรีวิว Win:** แยกทุพพลภาพจาก PA ให้เข้า priorityOrder (แตะ engine — ต้องให้ Win สเปคสูตร disability need ก่อน) · **เฟส Team**: แดชบอร์ดหัวหน้าทีม v1 (aggregate เท่านั้น) + แชร์เคสรายเคสเพื่อโค้ช + house assumptions + นโยบาย "ตัวแทนออกจากทีม → export/downgrade" · ทนายตรวจ Terms/Privacy ก่อนเก็บเงิน
+**รอบ 5 — แยกทุพพลภาพ (TPD) เป็นหมวดเต็ม + นโยบายออกจากทีม** (commit 1b6a478, migration 0009):
+- Win สเปคสูตร TPD → `analyzeDisability()` แทน `analyzeAccident` ในชุด 6 หมวด · key `'disability'` label "ทุพพลภาพ / คุ้มครองรายได้" · `excludeFromTotal: false` → เข้า priorityOrder + คะแนน + ธง resale + พีระมิดชั้นรากฐาน
+- need = ทดแทนรายได้ (100% ไม่หัก consumption · หลังหักเงินทดแทน ปกส. · ≥5 ปี ถึงเกษียณ) + ปลดหนี้เต็ม + ค่าดูแล/ปรับสภาพบ้าน (฿400k + ฿20k/ด. × 10 ปี PV) · เพดาน 15 เท่ารายได้+หนี้ · ขั้นต่ำ ฿1M
+- have = TPD ก้อนส่วนตัว + ชดเชยรายได้รายเดือนแปลงเป็น PV + TPD กลุ่ม · มีแต่กลุ่ม → บังคับ "gap" · PA เป็นบรรทัดเสริมใต้การ์ด
+- assumptions: `DISABILITY` + `SSO_DISABILITY` · `CATEGORY_WEIGHTS` ปรับใหม่ (life 25→23, ci 20→17, +disability 10, −accident 5)
+- ฟอร์ม: `existingTpdSum` / `disabilityBenefitMonthly` / `hasWaiverOfPremium` / `groupTpdSum` แทน radio `hasDisabilityIncome` เดิม
+- `policies.kind` เพิ่ม `'disability'` (migration 0009) · `GAP_COVER` + `coverageFromPolicies` + `KIND_LABEL` อัปเดต
+- 6 เทสต์ใหม่ (เกษียณ / ไม่มีรายได้ / มีแต่กลุ่ม / WP / ปกส. / TPD ปิดช่องว่าง) → 33 tests
+- **Terms**: หัวข้อใหม่ "การเป็นสมาชิกทีม (Team) และการออกจากทีม" (หัวหน้าทีมเห็นแค่ข้อมูลรวม · สมุดลูกค้าเป็นของตัวแทน · ออกจากทีม = ปรับลดสิทธิ์ + export ได้) + บรรทัดสอดคล้องใน Privacy — **ร่าง รอไข่มุกตรวจ**
+
+migration 0006–0009 รันแล้ว (Claude รันผ่าน Chrome · verified). ทั้ง 5 รอบ push + deploy แล้ว — **รีวิว Win ปิดครบทุกข้อด้าน engine/product**
+**เหลือ (เฟสถัดไป ไม่ใช่รีวิว Win แล้ว):** เฟส Team จริง (แดชบอร์ดหัวหน้าทีม aggregate-only + seat invite + trial + แชร์เคสโค้ช + house assumptions) · **kaimook รีวิวกฎหมายอยู่** (PDPA / คปภ. / Terms / การรับเงิน / เครื่องหมายการค้า) → จะแก้ตามที่ไข่มุกบอก · ทนาย practising ตรวจก่อนเก็บเงินจริง
 
 ## 2026-08-28 — Module B core เริ่ม: สมุดลูกค้า (client book)
 
