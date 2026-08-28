@@ -153,7 +153,7 @@ export async function listClients() {
   if (!user) return [];
   const { data, error } = await supabase
     .from('clients')
-    .select('id, full_name, nickname, birth_date, phone, marital_status, updated_at, policies(id, status, renewal_date)')
+    .select('id, full_name, nickname, birth_date, phone, marital_status, stage, updated_at, policies(id, status, renewal_date)')
     .eq('agent_id', user.id)
     .order('full_name');
   if (error) throw error;
@@ -184,8 +184,8 @@ export async function getClient(id) {
   return { client, policies: policies ?? [], analyses: analyses ?? [] };
 }
 
-/** สร้างลูกค้าใหม่ — ต้องยืนยันความยินยอม (PDPA) ก่อน */
-export async function createClient(fields, { consent = false } = {}) {
+/** สร้างลูกค้าใหม่ — ต้องยืนยันความยินยอม (PDPA) ก่อน · stage: 'customer' | 'prospect' */
+export async function createClient(fields, { consent = false, stage = 'customer' } = {}) {
   if (!hasSupabase) throw new Error('ยังไม่ได้ตั้งค่า Supabase');
   if (!consent) throw new Error('กรุณายืนยันว่าได้รับความยินยอมจากลูกค้าก่อนบันทึกเข้าสมุด');
   const user = await getUser();
@@ -193,6 +193,7 @@ export async function createClient(fields, { consent = false } = {}) {
   const row = {
     agent_id: user.id,
     ...pick(CLIENT_FIELDS, fields),
+    stage: stage === 'prospect' ? 'prospect' : 'customer',
     pdpa_consent: true,
     pdpa_consent_at: new Date().toISOString(),
   };
@@ -200,6 +201,13 @@ export async function createClient(fields, { consent = false } = {}) {
   const { data, error } = await supabase.from('clients').insert(row).select('id').single();
   if (error) throw error;
   return data;
+}
+
+/** เปลี่ยนสถานะผู้มุ่งหวัง → ลูกค้า */
+export async function setClientStage(id, stage) {
+  if (!hasSupabase) throw new Error('ยังไม่ได้ตั้งค่า Supabase');
+  const { error } = await supabase.from('clients').update({ stage: stage === 'prospect' ? 'prospect' : 'customer' }).eq('id', id);
+  if (error) throw error;
 }
 
 /** แก้ไขข้อมูลลูกค้า */
@@ -282,6 +290,110 @@ export async function upcomingRenewals(days = 90) {
     .order('renewal_date');
   if (error) throw error;
   return (data ?? []).map((p) => ({ ...p, client_name: p.clients?.full_name || '(ไม่ระบุ)', clients: undefined }));
+}
+
+/* ═══════════════ งานติดตาม (follow-ups) ═══════════════ */
+
+const REMINDER_FIELDS = ['client_id', 'kind', 'title', 'detail', 'due_date'];
+
+/** รายการติดตามที่ยังไม่เสร็จ (หรือทั้งหมด) + ชื่อลูกค้า */
+export async function listReminders({ includeDone = false } = {}) {
+  if (!hasSupabase) return [];
+  const user = await getUser();
+  if (!user) return [];
+  let q = supabase
+    .from('reminders')
+    .select('id, client_id, kind, title, detail, due_date, done, done_at, clients(full_name)')
+    .eq('agent_id', user.id)
+    .order('due_date');
+  if (!includeDone) q = q.eq('done', false);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []).map((r) => ({ ...r, client_name: r.clients?.full_name || null, clients: undefined }));
+}
+
+export async function createReminder(fields) {
+  if (!hasSupabase) throw new Error('ยังไม่ได้ตั้งค่า Supabase');
+  const user = await getUser();
+  if (!user) throw new Error('กรุณาเข้าสู่ระบบ');
+  const row = { agent_id: user.id, ...pick(REMINDER_FIELDS, fields) };
+  if (!row.title) throw new Error('กรุณากรอกหัวข้อ');
+  if (!row.due_date) throw new Error('กรุณาระบุวันครบกำหนด');
+  const { data, error } = await supabase.from('reminders').insert(row).select('*').single();
+  if (error) throw error;
+  return data;
+}
+
+export async function setReminderDone(id, done) {
+  if (!hasSupabase) throw new Error('ยังไม่ได้ตั้งค่า Supabase');
+  const { error } = await supabase.from('reminders')
+    .update({ done: !!done, done_at: done ? new Date().toISOString() : null })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteReminder(id) {
+  if (!hasSupabase) throw new Error('ยังไม่ได้ตั้งค่า Supabase');
+  const { error } = await supabase.from('reminders').delete().eq('id', id);
+  if (error) throw error;
+}
+
+/** ลูกค้าที่วันเกิดอยู่ในเดือนนี้ */
+export async function birthdaysThisMonth() {
+  if (!hasSupabase) return [];
+  const user = await getUser();
+  if (!user) return [];
+  const { data } = await supabase
+    .from('clients')
+    .select('id, full_name, nickname, birth_date')
+    .eq('agent_id', user.id)
+    .not('birth_date', 'is', null);
+  const mm = new Date().getMonth() + 1;
+  return (data ?? [])
+    .filter((c) => Number((c.birth_date || '').slice(5, 7)) === mm)
+    .map((c) => ({ ...c, day: Number(c.birth_date.slice(8, 10)) }))
+    .sort((a, b) => a.day - b.day);
+}
+
+/* หมวด Protection Gap → ประเภทกรมธรรม์ที่ถือว่าครอบคลุมหมวดนั้น */
+const GAP_COVER = {
+  life: ['life', 'unitlinked', 'group'],
+  health: ['health', 'group'],
+  ci: ['ci'],
+  accident: ['pa', 'group'],
+  retirement: ['annuity', 'savings', 'unitlinked'],
+  education: ['savings', 'unitlinked', 'annuity'],
+};
+const GAP_LABEL = {
+  life: 'ทุนประกันชีวิต', health: 'ประกันสุขภาพ', ci: 'โรคร้ายแรง',
+  accident: 'อุบัติเหตุ / ทุพพลภาพ', retirement: 'เงินออมเพื่อเกษียณ', education: 'ทุนการศึกษาบุตร',
+};
+
+/**
+ * ธง resale — ลูกค้าที่ผลวิเคราะห์ล่าสุดมีช่องว่างในหมวดที่ยังไม่มีกรมธรรม์รองรับ
+ * คืน [{ client_id, client_name, gaps:[label], analysisDate }]
+ */
+export async function resaleOpportunities() {
+  if (!hasSupabase) return [];
+  const user = await getUser();
+  if (!user) return [];
+  const { data, error } = await supabase
+    .from('clients')
+    .select('id, full_name, policies(kind, status), analyses(summary, created_at)')
+    .eq('agent_id', user.id);
+  if (error) throw error;
+  const out = [];
+  for (const c of data ?? []) {
+    const ana = (c.analyses ?? []).slice().sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))[0];
+    const order = ana?.summary?.priorityOrder;
+    if (!Array.isArray(order) || !order.length) continue;
+    const held = new Set((c.policies ?? []).filter((p) => p.status === 'active').map((p) => p.kind));
+    const gaps = order
+      .filter((k) => GAP_COVER[k] && !GAP_COVER[k].some((kind) => held.has(kind)))
+      .map((k) => GAP_LABEL[k] || k);
+    if (gaps.length) out.push({ client_id: c.id, client_name: c.full_name, gaps, analysisDate: ana.created_at });
+  }
+  return out;
 }
 
 /** สถิติเดือนนี้ */

@@ -64,7 +64,8 @@ export function renderClientList(opts = {}) {
       const renewCls = d == null ? 'muted' : d < 0 ? 'renew-over' : d <= 30 ? 'renew-soon' : 'muted';
       listWrap.append(h('div', { class: 'dash-row client-row' },
         h('div', { class: 'dr-name', onclick: () => opts.onOpen?.(c.id) },
-          h('div', { class: 'nm' }, c.full_name, c.nickname ? h('span', { class: 'muted' }, ` (${c.nickname})`) : null),
+          h('div', { class: 'nm' }, c.full_name, c.nickname ? h('span', { class: 'muted' }, ` (${c.nickname})`) : null,
+            c.stage === 'prospect' ? h('span', { class: 'tag p-info', style: 'margin-left:6px' }, 'ผู้มุ่งหวัง') : null),
           h('div', { class: 'sub' }, [MARITAL_LABEL[c.marital_status], c.phone].filter(Boolean).join(' · '))),
         h('span', { class: 'r n muted' }, c.policyCount || 0),
         h('span', { class: `r ${renewCls}`, style: 'font-size:12px' },
@@ -281,8 +282,16 @@ export function renderClientDetail(opts = {}) {
     h('a', { class: 'back-link', href: '?view=clients', onclick: (e) => { e.preventDefault(); opts.onBack?.(); } },
       icon(ICONS.back, { size: 13 }), 'สมุดลูกค้า'),
     h('div', { class: 'dash-topbar' },
-      h('div', {}, h('h1', {}, client.full_name, client.nickname ? h('span', { class: 'muted', style: 'font-size:16px' }, ` (${client.nickname})`) : null)),
+      h('div', {}, h('h1', {}, client.full_name,
+        client.nickname ? h('span', { class: 'muted', style: 'font-size:16px' }, ` (${client.nickname})`) : null,
+        client.stage === 'prospect' ? h('span', { class: 'tag p-info', style: 'margin-left:8px;vertical-align:middle' }, 'ผู้มุ่งหวัง') : null)),
       h('div', { style: 'flex:1' }),
+      client.stage === 'prospect'
+        ? h('button', { class: 'btn btn-secondary', onclick: async () => {
+            try { await opts.onSetStage?.('customer'); client.stage = 'customer'; location.reload(); }
+            catch (e) { alert('ไม่สำเร็จ: ' + e.message); }
+          } }, 'แปลงเป็นลูกค้า')
+        : null,
       h('button', { class: 'btn btn-secondary', onclick: () => opts.onNewAnalysis?.() }, 'วิเคราะห์ Protection Gap'),
       h('button', { class: 'btn btn-secondary', style: 'color:var(--ap-bad)', onclick: async () => {
         if (!confirm(`ลบ "${client.full_name}" ออกจากสมุด?\n\nกรมธรรม์ที่บันทึกไว้จะถูกลบด้วย · ผลวิเคราะห์ที่ผูกไว้จะไม่ถูกลบ แต่จะถูกปลดผูก`)) return;

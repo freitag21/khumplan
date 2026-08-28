@@ -825,6 +825,32 @@ ul.tax-note li { margin: 0; }
 .link-row:last-of-type { border-bottom: none; }
 .link-row .lr-name { flex: 1; font-size: 12.5px; }
 
+/* งานติดตาม (follow-ups) */
+.fu-block { margin-bottom: 26px; }
+.fu-list { display: flex; flex-direction: column; }
+.fu-row, .fu-auto {
+  display: flex; gap: 11px; align-items: flex-start;
+  padding: 11px 0; border-bottom: 1px solid var(--ap-line);
+}
+.fu-row:last-child, .fu-auto:last-child { border-bottom: none; }
+.fu-row.done { opacity: 0.5; }
+.fu-row.done .fu-title { text-decoration: line-through; }
+.fu-check {
+  flex: none; width: 20px; height: 20px; margin-top: 1px; border-radius: 6px;
+  border: 1.5px solid var(--ap-line); background: var(--ap-card);
+  cursor: pointer; display: grid; place-items: center;
+}
+.fu-row.done .fu-check { border-color: var(--ap-ok); background: var(--ap-ok-s); }
+.fu-main { flex: 1; min-width: 0; }
+.fu-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fu-title { font-size: 13px; font-weight: 500; }
+.fu-client { font-size: 11.5px; color: var(--ap-pri-ink); text-decoration: none; }
+.fu-client:hover { text-decoration: underline; }
+.fu-detail { font-size: 11.5px; line-height: 1.5; margin-top: 3px; }
+.fu-side { flex: none; display: flex; align-items: center; gap: 4px; }
+.fu-add { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--ap-line); }
+.fu-add-grid { display: grid; grid-template-columns: 1fr 160px; gap: 10px; }
+
 /* ============================================================================
    Responsive
    ========================================================================== */
@@ -841,6 +867,7 @@ ul.tax-note li { margin: 0; }
   .dash-row.client-row .r:nth-child(3) { display: none; }
   .renew-line { grid-template-columns: 1fr auto; }
   .renew-line .muted:nth-child(2) { display: none; }
+  .fu-add-grid { grid-template-columns: 1fr; }
   .auth-card { grid-template-columns: 1fr; }
   .auth-aside { display: none; }
   .auth-main { padding: 30px 22px; }

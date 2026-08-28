@@ -8,13 +8,15 @@ import { renderManha } from './ui/manha.js';
 import { renderAuth, renderLanding, renderSupport, renderGuide, renderContact, renderTerms, renderPrivacy } from './ui/pages.js';
 import { renderDashboard } from './ui/dashboard.js';
 import { renderClientList, renderClientDetail } from './ui/clients.js';
+import { renderFollowups } from './ui/followups.js';
 import { hasSupabase } from './supabase.js';
 import { getAgentProfile, signUp, signIn, sendPasswordReset, updatePassword, signOut, onAuthChange } from './auth.js';
 import {
   saveAnalysis, updateAnalysis, deleteAnalysis, loadMyAnalysis, loadAnalysisBySlug,
   listMyAnalyses, updateAgentProfile, monthStats, deleteMyAccount,
-  listClients, getClient, createClient, updateClient, deleteClient,
+  listClients, getClient, createClient, setClientStage, updateClient, deleteClient,
   addPolicy, updatePolicy, deletePolicy, linkAnalysis, listUnlinkedAnalyses, upcomingRenewals,
+  listReminders, createReminder, setReminderDone, deleteReminder, birthdaysThisMonth, resaleOpportunities,
 } from './store.js';
 
 const root = document.getElementById('app');
@@ -50,6 +52,7 @@ function route() {
   if (view === 'dashboard') return showDashboard();
   if (view === 'clients') return showClients();
   if (view === 'client') return showClient(p.get('id'));
+  if (view === 'followups') return showFollowups();
   if (view === 'support') return mount(renderSupport({ onBack: () => nav('?') }), { bare: true });
   if (view === 'guide') return mount(renderGuide({ onBack: () => nav('?'), onStart: () => nav('?view=quick') }));
   if (view === 'contact') return mount(renderContact({ onBack: () => nav('?'), onSupport: SUPPORT.enabled ? () => nav('?view=support') : null }));
@@ -93,6 +96,7 @@ function mount(node, { bare = false, client = false } = {}) {
 function topbar() {
   const right = [];
   if (hasSupabase && agent?.id) {
+    right.push(h('a', { class: 'topbar-link', href: '?view=followups', onclick: (e) => { e.preventDefault(); nav('?view=followups'); } }, 'งานติดตาม'));
     right.push(h('a', { class: 'topbar-link', href: '?view=clients', onclick: (e) => { e.preventDefault(); nav('?view=clients'); } }, 'สมุดลูกค้า'));
     right.push(h('a', { class: 'topbar-link', href: '?view=dashboard', onclick: (e) => { e.preventDefault(); nav('?view=dashboard'); } }, 'แดชบอร์ด'));
     right.push(h('span', { class: 'topbar-user' }, agent.display_name || agent.email));
@@ -150,16 +154,20 @@ async function showDashboard() {
   if (!agent?.id) return nav('?view=auth');
   root.innerHTML = '';
   root.append(topbar(), h('div', { class: 'page' }, h('p', { class: 'muted' }, 'กำลังโหลด…')), footer());
-  const [analyses, stats, profile] = await Promise.all([listMyAnalyses(), monthStats(), getAgentProfile()]);
+  const [analyses, stats, profile, reminders, renewals30] = await Promise.all([
+    listMyAnalyses(), monthStats(), getAgentProfile(), listReminders(), upcomingRenewals(30),
+  ]);
   agent = profile || agent;
   const node = renderDashboard({
     analyses, stats, agent,
+    followupCount: reminders.length + renewals30.length,
     onNew: () => nav('?'),
     onOpen: (id) => nav(`?edit=${id}`),
     onDelete: (id) => deleteAnalysis(id),
     onSaveProfile: async (fields) => { agent = await updateAgentProfile(fields); },
     onSupport: () => nav('?view=support'),
     onClients: () => nav('?view=clients'),
+    onFollowups: () => nav('?view=followups'),
     onDeleteAccount: async () => { await deleteMyAccount(); await signOut(); alert('ปิดบัญชีเรียบร้อยแล้ว'); },
   });
   root.innerHTML = '';
@@ -231,9 +239,44 @@ async function showClient(id) {
       onAddPolicy: (fields) => addPolicy(id, fields),
       onUpdatePolicy: (pid, fields) => updatePolicy(pid, fields),
       onDeletePolicy: (pid) => deletePolicy(pid),
+      onSetStage: (stage) => setClientStage(id, stage),
       onLinkAnalysis: (aid, cid) => linkAnalysis(aid, cid),
       onOpenAnalysis: (aid) => nav(`?edit=${aid}`),
-      onNewAnalysis: () => nav('?'),
+      onNewAnalysis: () => showForm(prefillFromClient(data.client), null, id),
+    });
+    root.innerHTML = '';
+    root.append(topbar(), h('div', { class: 'page' }, node), footer());
+    window.scrollTo({ top: 0 });
+  } catch (e) {
+    mount(h('p', { class: 'muted' }, 'โหลดไม่สำเร็จ: ' + e.message));
+  }
+}
+
+function prefillFromClient(c) {
+  const pf = { clientName: c.full_name || '' };
+  if (c.birth_date) {
+    const age = Math.floor((Date.now() - new Date(c.birth_date + 'T00:00:00').getTime()) / (365.25 * 86400000));
+    if (age > 0 && age < 100) pf.age = String(age);
+  }
+  if (c.sex === 'M' || c.sex === 'F') pf.sex = c.sex;
+  if (['single', 'married', 'divorced', 'widowed', 'single_parent'].includes(c.marital_status)) pf.maritalStatus = c.marital_status;
+  return pf;
+}
+
+async function showFollowups() {
+  if (!needsAgent()) return;
+  loadingShell();
+  try {
+    const [reminders, renewals, birthdays, resale] = await Promise.all([
+      listReminders(), upcomingRenewals(90), birthdaysThisMonth(), resaleOpportunities(),
+    ]);
+    const node = renderFollowups({
+      reminders, renewals, birthdays, resale,
+      onBack: () => nav('?view=dashboard'),
+      onOpenClient: (id) => nav(`?view=client&id=${id}`),
+      onAddReminder: (f) => createReminder(f),
+      onToggleDone: (rid, done) => setReminderDone(rid, done),
+      onDeleteReminder: (rid) => deleteReminder(rid),
     });
     root.innerHTML = '';
     root.append(topbar(), h('div', { class: 'page' }, node), footer());
@@ -252,11 +295,17 @@ function showQuick() {
     onContinue: (prefill) => showForm(prefill),
     onSkip: () => showForm(),
     onRestart: () => showQuick(),
+    canSaveProspect: hasSupabase && !!agent?.id,
+    onSaveProspect: async ({ name, detail, dueDate }) => {
+      const { id } = await createClient({ full_name: name }, { consent: true, stage: 'prospect' });
+      await createReminder({ client_id: id, kind: 'nurture', title: `ติดตามผู้มุ่งหวัง: ${name}`, detail, due_date: dueDate });
+      return id;
+    },
   })), footer());
   window.scrollTo({ top: 0 });
 }
 
-function showForm(prefill, editId) {
+function showForm(prefill, editId, linkClientId) {
   root.innerHTML = '';
   root.append(topbar());
   const page = h('div', { class: 'page page-narrow' });
@@ -265,7 +314,7 @@ function showForm(prefill, editId) {
       h('div', { class: 'qb-text' }, h('b', {}, 'ยังไม่แน่ใจว่าควรลงเวลากับผู้มุ่งหวังคนนี้?'), ' คัดกรองเร็วด้วย MANHA ก่อน'),
       h('a', { class: 'btn btn-secondary', href: '?view=quick', onclick: (e) => { e.preventDefault(); nav('?view=quick'); } }, 'คัดกรอง MANHA')));
   }
-  lastForm = buildForm({ onSubmit: (raw) => showResults(analyze(toNeedsInput(raw)), raw, editId) });
+  lastForm = buildForm({ onSubmit: (raw) => showResults(analyze(toNeedsInput(raw)), raw, editId, linkClientId) });
   if (prefill) lastForm.setValues(prefill);
   page.append(lastForm.element);
   root.append(page, footer());
@@ -278,13 +327,13 @@ function startSample() {
   showResults(analyze(toNeedsInput(lastForm.getValues())), lastForm.getValues());
 }
 
-function showResults(result, rawForm, editId) {
+function showResults(result, rawForm, editId, linkClientId) {
   root.innerHTML = '';
   root.append(topbar());
   const canSave = hasSupabase && agent?.id;
   const node = renderResults(result, {
     agent,
-    onEdit: () => showForm(rawForm, editId),
+    onEdit: () => showForm(rawForm, editId, linkClientId),
     onSave: canSave ? async () => {
       const ok = confirm(
         (editId ? 'ยืนยันการบันทึกทับผลเดิม\n\n' : 'ยืนยันการบันทึก\n\n') +
@@ -293,11 +342,15 @@ function showResults(result, rawForm, editId) {
         'กด "ตกลง" เพื่อยืนยันว่าได้แจ้งวัตถุประสงค์และได้รับความยินยอมจากลูกค้าแล้ว (PDPA)');
       if (!ok) return;
       try {
-        const { slug } = editId
-          ? await updateAnalysis(editId, result.input, result.summary)
-          : await saveAnalysis(result.input, result.summary, { consent: true });
-        alert(editId ? 'บันทึกการแก้ไขแล้ว' : ('บันทึกแล้ว\nลิงก์แชร์ (90 วัน): ' + `${location.origin}${location.pathname}?a=${slug}`));
-        nav('?view=dashboard');
+        if (editId) {
+          await updateAnalysis(editId, result.input, result.summary);
+          alert('บันทึกการแก้ไขแล้ว');
+        } else {
+          const { id, slug } = await saveAnalysis(result.input, result.summary, { consent: true });
+          if (linkClientId) { try { await linkAnalysis(id, linkClientId); } catch { /* ผูกไม่ได้ก็ไม่เป็นไร */ } }
+          alert('บันทึกแล้ว\nลิงก์แชร์ (90 วัน): ' + `${location.origin}${location.pathname}?a=${slug}`);
+        }
+        nav(linkClientId && !editId ? `?view=client&id=${linkClientId}` : '?view=dashboard');
       } catch (e) { alert('บันทึกไม่สำเร็จ: ' + e.message); }
     } : null,
     onCopyLink: null,

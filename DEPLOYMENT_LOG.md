@@ -5,6 +5,20 @@
 
 ---
 
+## 2026-08-28 — Module B: งานติดตาม (follow-ups) + resale + nurture
+
+- ✅ **migration `supabase/0005_followups.sql` รันแล้ว** (Claude รันผ่าน Chrome — verify: reminders 11 cols, clients.stage เพิ่มแล้ว) · setup.sql อัปเดต
+  - `clients.stage` ('prospect' | 'customer', default customer)
+  - `public.reminders` (kind: nurture/resale/renewal/birthday/custom · title/detail/due_date/done · RLS per-agent · updated_at trigger)
+- โค้ด: `src/ui/followups.js` ใหม่ (`renderFollowups`), store.js +6 fn (listReminders/createReminder/setReminderDone/deleteReminder/birthdaysThisMonth/resaleOpportunities) + setClientStage, route `?view=followups`, topbar link "งานติดตาม", dashboard card + count badge
+- **หน้างานติดตาม:** รายการติดตาม (เช็ก done / เพิ่มเอง) + ครบกำหนดชำระเบี้ย 90 วัน + วันเกิดเดือนนี้ + โอกาสเสนอเพิ่ม (resale) — แต่ละแหล่งอัตโนมัติมีปุ่ม "＋ ตั้งเตือน" แปลงเป็น reminder
+- **ธง resale:** ผลวิเคราะห์ล่าสุดที่ผูกกับลูกค้า → หมวดที่ priorityOrder ระบุว่ามีช่องว่าง **และ**ลูกค้าไม่มีกรมธรรม์ active ในประเภทที่รองรับ (map หมวด→ประเภทใน store.js `GAP_COVER`)
+- **nurture จาก MANHA:** readout ที่ไม่ใช่ "go" + ล็อกอินอยู่ → กล่อง "บันทึกเป็นผู้มุ่งหวัง + ตั้งเตือน" (3/6/12 เดือน) → สร้าง client stage=prospect + reminder kind=nurture (detail = สรุป MANHA) · ต้อง confirm PDPA
+- **ปุ่ม "วิเคราะห์ Protection Gap" ในหน้าลูกค้า:** prefill ชื่อ/อายุ(จาก birth_date)/เพศ/สถานะ + บันทึกแล้วผูกผลกลับเข้าลูกค้าอัตโนมัติ + เด้งกลับหน้าลูกค้า
+- client list/detail: แท็ก "ผู้มุ่งหวัง" + ปุ่ม "แปลงเป็นลูกค้า"
+- ทดสอบ: build ผ่าน, 27 tests, ไม่มี console error, render followups/manha-nurture/dashboard ผ่าน (mock), toggle/add/＋ตั้งเตือน ทำงาน, มือถือไม่ล้นจอ
+- ✅ push + deploy
+
 ## 2026-08-28 — Module B core เริ่ม: สมุดลูกค้า (client book)
 
 - **Migration `supabase/0004_client_book.sql` — user ต้องรันใน SQL Editor** (setup.sql อัปเดตแล้วด้วย)
