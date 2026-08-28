@@ -219,7 +219,7 @@ export async function getClient(id) {
 }
 
 /** สร้างลูกค้าใหม่ — ต้องยืนยันความยินยอม (PDPA) ก่อน · stage: 'customer' | 'prospect' */
-export async function createClient(fields, { consent = false, stage = 'customer' } = {}) {
+export async function createClient(fields, { consent = false, stage = 'customer', consentVersion = null } = {}) {
   if (!hasSupabase) throw new Error('ยังไม่ได้ตั้งค่า Supabase');
   if (!consent) throw new Error('กรุณายืนยันว่าได้รับความยินยอมจากลูกค้าก่อนบันทึกเข้าสมุด');
   const user = await getUser();
@@ -230,6 +230,7 @@ export async function createClient(fields, { consent = false, stage = 'customer'
     stage: stage === 'prospect' ? 'prospect' : 'customer',
     pdpa_consent: true,
     pdpa_consent_at: new Date().toISOString(),
+    consent_version: consentVersion,
   };
   if (!row.full_name) throw new Error('กรุณากรอกชื่อลูกค้า');
   const { data, error } = await supabase.from('clients').insert(row).select('id').single();
@@ -253,9 +254,16 @@ export async function updateClient(id, fields) {
   if (error) throw error;
 }
 
-/** ลบลูกค้า (กรมธรรม์ถูกลบตาม cascade · ผลวิเคราะห์ที่ผูกไว้จะถูกปลดผูก ไม่ถูกลบ) */
-export async function deleteClient(id) {
+/**
+ * ลบลูกค้า (กรมธรรม์ + รายการติดตาม + บันทึกการติดต่อ ถูกลบตาม cascade)
+ * alsoAnalyses=true → ลบผลวิเคราะห์ที่ผูกไว้ด้วย (ค่าเริ่มต้นในหน้าจอ) · false → แค่ปลดผูก
+ */
+export async function deleteClient(id, { alsoAnalyses = false } = {}) {
   if (!hasSupabase) throw new Error('ยังไม่ได้ตั้งค่า Supabase');
+  if (alsoAnalyses) {
+    const { error: e1 } = await supabase.from('analyses').delete().eq('client_id', id);
+    if (e1) throw e1;
+  }
   const { error } = await supabase.from('clients').delete().eq('id', id);
   if (error) throw error;
 }
@@ -390,6 +398,20 @@ export async function deleteReminder(id) {
   if (error) throw error;
 }
 
+/** ปิดธง resale ของลูกค้าคนหนึ่ง — เก็บเป็น reminder แบบ done (tombstone · กันธงเด้งซ้ำ) */
+export async function dismissResale(clientId, months = 6) {
+  if (!hasSupabase) throw new Error('ยังไม่ได้ตั้งค่า Supabase');
+  const user = await getUser();
+  if (!user) throw new Error('กรุณาเข้าสู่ระบบ');
+  const due = new Date(); due.setMonth(due.getMonth() + Number(months || 6));
+  const { error } = await supabase.from('reminders').insert({
+    agent_id: user.id, client_id: clientId, kind: 'resale',
+    title: 'ปิดธงเสนอเพิ่มไว้ชั่วคราว', due_date: due.toISOString().slice(0, 10),
+    done: true, done_at: new Date().toISOString(),
+  });
+  if (error) throw error;
+}
+
 /* ═══════════════ บันทึกการติดต่อ (contact log) ═══════════════ */
 
 export async function listInteractions(clientId) {
@@ -456,6 +478,28 @@ export async function birthdaysThisMonth() {
     .filter((c) => Number((c.birth_date || '').slice(5, 7)) === mm)
     .map((c) => ({ ...c, day: Number(c.birth_date.slice(8, 10)) }))
     .sort((a, b) => a.day - b.day);
+}
+
+/**
+ * ผู้มุ่งหวังที่เงียบนาน — สร้างเกิน N เดือน ไม่มีบันทึกการติดต่อ และไม่มีงานติดตามค้าง
+ * (PDPA: ไม่เก็บข้อมูลเกินความจำเป็น — ควรลบหรือขอความยินยอมใหม่)
+ */
+export async function staleProspects(months = 24) {
+  if (!hasSupabase) return [];
+  const user = await getUser();
+  if (!user) return [];
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - Number(months || 24));
+  const { data, error } = await supabase
+    .from('clients')
+    .select('id, full_name, nickname, created_at, interactions(id), reminders(id, done)')
+    .eq('agent_id', user.id)
+    .eq('stage', 'prospect')
+    .lt('created_at', cutoff.toISOString());
+  if (error) throw error;
+  return (data ?? [])
+    .filter((c) => !(c.interactions ?? []).length && !(c.reminders ?? []).some((r) => !r.done))
+    .map((c) => ({ id: c.id, full_name: c.full_name, nickname: c.nickname, created_at: c.created_at }));
 }
 
 /* หมวด Protection Gap → ประเภทกรมธรรม์ส่วนตัวที่ถือว่าครอบคลุม (ไม่รวม 'group' — สวัสดิการหายเมื่อออกจากงาน) */

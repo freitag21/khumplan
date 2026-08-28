@@ -1,4 +1,5 @@
 import { h, icon, ICONS } from './dom.js';
+import { POLICY_VERSION } from '../auth.js';
 
 /* ─────────── ป้ายภาษาไทย ─────────── */
 export const KIND_LABEL = {
@@ -394,6 +395,23 @@ export function renderClientDetail(opts = {}) {
         h('div', { class: 'log-body' }, it.outcome))));
   }
   renderLog();
+
+  /* ---- ลบลูกค้า (แผงยืนยันในหน้า) ---- */
+  const delAlso = h('input', { type: 'checkbox', checked: '' });
+  const delMsg = h('div', { class: 'auth-fine' });
+  const delPanel = h('div', { class: 'del-panel', hidden: '' },
+    h('div', { style: 'font-size:13px;font-weight:600;color:var(--ap-bad)' }, `ลบ "${client.full_name}" ออกจากสมุด?`),
+    h('div', { class: 'muted', style: 'font-size:12px;line-height:1.6;margin:4px 0 8px' },
+      'กรมธรรม์ · รายการติดตาม · บันทึกการติดต่อ ของลูกค้าคนนี้จะถูกลบทั้งหมด การกระทำนี้ย้อนกลับไม่ได้'),
+    h('label', { class: 'pol-check', style: 'margin:0 0 10px' }, delAlso, h('span', {}, 'ลบผลวิเคราะห์ Protection Gap ที่ผูกไว้ด้วย')),
+    h('div', { style: 'display:flex;gap:8px;align-items:center' },
+      h('button', { class: 'btn btn-primary ap-fill', style: 'background:var(--ap-bad);border-color:var(--ap-bad)', onclick: async () => {
+        try { await opts.onDeleteClient?.({ alsoAnalyses: delAlso.checked }); }
+        catch (e) { delMsg.style.color = 'var(--ap-bad)'; delMsg.textContent = 'ลบไม่สำเร็จ: ' + e.message; }
+      } }, 'ยืนยันลบ'),
+      h('button', { class: 'btn btn-secondary', onclick: () => { delPanel.hidden = true; } }, 'ยกเลิก'),
+      delMsg));
+
   const logText = h('input', { class: 'input', placeholder: 'บันทึกผลการติดต่อ' });
   const logChan = select('call', Object.entries(CHAN_LABEL), { style: 'max-width:110px' });
   const logMsg = h('div', { class: 'auth-fine' });
@@ -424,10 +442,9 @@ export function renderClientDetail(opts = {}) {
           } }, 'แปลงเป็นลูกค้า')
         : null,
       h('button', { class: 'btn btn-secondary', onclick: () => opts.onNewAnalysis?.() }, 'วิเคราะห์ Protection Gap'),
-      h('button', { class: 'btn btn-secondary', style: 'color:var(--ap-bad)', onclick: async () => {
-        if (!confirm(`ลบ "${client.full_name}" ออกจากสมุด?\n\nกรมธรรม์ที่บันทึกไว้จะถูกลบด้วย · ผลวิเคราะห์ที่ผูกไว้จะไม่ถูกลบ แต่จะถูกปลดผูก`)) return;
-        try { await opts.onDeleteClient?.(); } catch (e) { alert('ลบไม่สำเร็จ: ' + e.message); }
-      } }, 'ลบลูกค้า')),
+      h('button', { class: 'btn btn-secondary', style: 'color:var(--ap-bad)', onclick: () => { delPanel.hidden = !delPanel.hidden; } }, 'ลบลูกค้า')),
+
+    delPanel,
 
     h('div', { class: 'client-cols' },
       h('div', {},
@@ -448,4 +465,45 @@ export function renderClientDetail(opts = {}) {
 
     h('h2', { class: 'sec-h', style: 'margin-top:26px' }, 'ข้อมูลลูกค้า'),
     profileCard);
+}
+
+/* ═══════════════ เพิ่มลูกค้าใหม่ (ฟอร์มในหน้า แทน prompt/confirm) ═══════════════ */
+
+/** @param {{onCreate:(fields,opts)=>Promise, onCancel:()=>void}} opts */
+export function renderNewClient(opts = {}) {
+  const f = {
+    full_name: input('', { placeholder: 'ชื่อ-นามสกุล' }),
+    nickname: input('', { placeholder: 'ชื่อเล่น (ไม่บังคับ)' }),
+    phone: input('', { placeholder: '08x-xxx-xxxx', inputmode: 'tel' }),
+    line_id: input('', { placeholder: 'LINE ID (ไม่บังคับ)' }),
+  };
+  const stageEl = select('customer', [['customer', 'ลูกค้า'], ['prospect', 'ผู้มุ่งหวัง']]);
+  const consentEl = h('input', { type: 'checkbox' });
+  const msg = h('div', { class: 'auth-fine' });
+  const submit = h('button', { class: 'btn btn-primary ap-fill', style: 'justify-content:center',
+    onclick: async () => {
+      if (!f.full_name.value.trim()) { msg.style.color = 'var(--ap-bad)'; msg.textContent = 'กรุณากรอกชื่อลูกค้า'; return; }
+      if (!consentEl.checked) { msg.style.color = 'var(--ap-bad)'; msg.textContent = 'กรุณายืนยันว่าได้รับความยินยอมจากลูกค้าแล้ว'; return; }
+      submit.disabled = true; msg.textContent = '';
+      try {
+        await opts.onCreate?.({
+          full_name: f.full_name.value.trim(), nickname: f.nickname.value.trim(),
+          phone: f.phone.value.trim(), line_id: f.line_id.value.trim(),
+        }, { consent: true, stage: stageEl.value, consentVersion: POLICY_VERSION });
+      } catch (e) { msg.style.color = 'var(--ap-bad)'; msg.textContent = 'เพิ่มไม่สำเร็จ: ' + e.message; submit.disabled = false; }
+    } }, 'เพิ่มเข้าสมุด');
+
+  return h('div', { class: 'doc-page', style: 'max-width:460px' },
+    h('a', { class: 'back-link', href: '?view=clients', onclick: (e) => { e.preventDefault(); opts.onCancel?.(); } },
+      icon(ICONS.back, { size: 13 }), 'สมุดลูกค้า'),
+    h('h1', { style: 'font-size:20px;margin-bottom:16px' }, 'เพิ่มลูกค้าใหม่'),
+    h('div', { class: 'card ap-g elev-sm' },
+      field('ชื่อ-นามสกุล', f.full_name),
+      h('div', { class: 'field-grid two' }, field('ชื่อเล่น', f.nickname), field('สถานะ', stageEl)),
+      h('div', { class: 'field-grid two' }, field('เบอร์โทร', f.phone), field('LINE ID', f.line_id)),
+      h('label', { class: 'auth-consent', style: 'display:flex;gap:9px;align-items:flex-start;margin:6px 0 12px;font-size:12px;line-height:1.55' },
+        consentEl,
+        h('span', {}, 'ยืนยันว่าได้แจ้งวัตถุประสงค์และได้รับความยินยอมจากลูกค้าในการเก็บและประมวลผลข้อมูลส่วนบุคคล (รวมข้อมูลสุขภาพซึ่งเป็นข้อมูลอ่อนไหวตาม PDPA มาตรา 26) แล้ว')),
+      h('div', { style: 'display:flex;gap:8px;align-items:center' }, submit,
+        h('button', { class: 'btn btn-secondary', onclick: () => opts.onCancel?.() }, 'ยกเลิก'), msg)));
 }

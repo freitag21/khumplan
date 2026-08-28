@@ -252,11 +252,29 @@ export function renderFollowups(opts = {}) {
             if (r.underinsured?.length) parts.push(`ทุนยังน้อยกว่าที่ควรมี: ${trimList(r.underinsured)}`);
             if (r.stale) parts.push('ผลวิเคราะห์เก่ากว่า 1 ปี — ควรทบทวนแผนประจำปี');
             const primary = r.gaps?.[0] || r.groupOnly?.[0] || r.underinsured?.[0] || 'ทบทวนแผน';
+            const ignore = h('button', { class: 'btn btn-secondary', style: 'padding:5px 10px;font-size:12px',
+              onclick: async () => {
+                ignore.disabled = true;
+                try { await opts.onDismissResale?.(r.client_id); ignore.closest('.fu-auto').remove(); }
+                catch (e) { ignore.disabled = false; alert('ไม่สำเร็จ: ' + e.message); }
+              } }, 'ไม่สนใจ');
             return autoRow(
               r.client_name,
               `${parts.join(' · ')} · จากผลวิเคราะห์ ${thDate(r.analysisDate)}`,
               { kind: 'resale', title: `เสนอเพิ่ม: ${r.client_name} (${primary})`, due_date: isoPlus(14),
-                detail: parts.join(' · '), client_id: r.client_id });
+                detail: parts.join(' · '), client_id: r.client_id, extraBtn: ignore });
           }))
+      : null,
+
+    (opts.stale || []).length
+      ? block('ผู้มุ่งหวังที่เงียบเกิน 2 ปี', opts.stale.length,
+          h('div', { class: 'muted', style: 'font-size:11.5px;margin-bottom:8px' }, 'PDPA: ไม่ควรเก็บข้อมูลเกินความจำเป็น — ควรติดต่อเพื่อขอความยินยอมใหม่ หรือลบออกจากสมุด'),
+          ...opts.stale.map((c) => h('div', { class: 'fu-auto' },
+            h('div', { class: 'fu-main' },
+              h('div', { class: 'fu-top' },
+                h('span', { class: 'fu-title' }, `${c.full_name}${c.nickname ? ` (${c.nickname})` : ''}`),
+                h('a', { class: 'fu-client', href: '#', onclick: (e) => { e.preventDefault(); opts.onOpenClient?.(c.id); } }, 'เปิด')),
+              h('div', { class: 'fu-detail muted' }, `เพิ่มเข้าสมุดเมื่อ ${thDate(c.created_at)} · ไม่มีการติดต่อ`))))
+      )
       : null);
 }

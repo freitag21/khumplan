@@ -7,16 +7,17 @@ import { renderResults } from './ui/results.js';
 import { renderManha } from './ui/manha.js';
 import { renderAuth, renderLanding, renderSupport, renderGuide, renderContact, renderTerms, renderPrivacy } from './ui/pages.js';
 import { renderDashboard } from './ui/dashboard.js';
-import { renderClientList, renderClientDetail } from './ui/clients.js';
+import { renderClientList, renderClientDetail, renderNewClient } from './ui/clients.js';
 import { renderFollowups } from './ui/followups.js';
 import { hasSupabase } from './supabase.js';
-import { getAgentProfile, signUp, signIn, sendPasswordReset, updatePassword, signOut, onAuthChange } from './auth.js';
+import { getAgentProfile, signUp, signIn, sendPasswordReset, updatePassword, signOut, onAuthChange, POLICY_VERSION } from './auth.js';
 import {
   saveAnalysis, updateAnalysis, deleteAnalysis, loadMyAnalysis, loadAnalysisBySlug,
   listMyAnalyses, updateAgentProfile, monthStats, deleteMyAccount,
   listClients, getClient, createClient, setClientStage, updateClient, deleteClient,
   addPolicy, updatePolicy, deletePolicy, linkAnalysis, listUnlinkedAnalyses, upcomingRenewals, coverageFromPolicies,
-  listReminders, createReminder, setReminderDone, snoozeReminder, deleteReminder, birthdaysThisMonth, resaleOpportunities,
+  listReminders, createReminder, setReminderDone, snoozeReminder, deleteReminder, dismissResale,
+  birthdaysThisMonth, resaleOpportunities, staleProspects,
   listInteractions, addInteraction, markPremiumPaid,
 } from './store.js';
 
@@ -52,6 +53,7 @@ function route() {
   if (view === 'auth') return showAuth(p.get('m') || 'signin');
   if (view === 'dashboard') return showDashboard();
   if (view === 'clients') return showClients();
+  if (view === 'client-new') return showNewClient();
   if (view === 'client') return showClient(p.get('id'));
   if (view === 'followups') return showFollowups();
   if (view === 'support') return mount(renderSupport({ onBack: () => nav('?') }), { bare: true });
@@ -199,7 +201,7 @@ async function showClients() {
     const node = renderClientList({
       clients, renewals,
       onOpen: (id) => nav(`?view=client&id=${id}`),
-      onNew: () => promptNewClient(),
+      onNew: () => nav('?view=client-new'),
       onBack: () => nav('?view=dashboard'),
     });
     root.innerHTML = '';
@@ -210,19 +212,17 @@ async function showClients() {
   }
 }
 
-async function promptNewClient() {
-  const name = prompt('ชื่อ-นามสกุลลูกค้า');
-  if (name == null) return;
-  const full_name = name.trim();
-  if (!full_name) return;
-  const ok = confirm(
-    `เพิ่ม "${full_name}" เข้าสมุดลูกค้า\n\n` +
-    'กด "ตกลง" เพื่อยืนยันว่าได้แจ้งวัตถุประสงค์และได้รับความยินยอมจากลูกค้าในการเก็บข้อมูลแล้ว (PDPA)');
-  if (!ok) return;
-  try {
-    const { id } = await createClient({ full_name }, { consent: true });
-    nav(`?view=client&id=${id}`);
-  } catch (e) { alert('เพิ่มลูกค้าไม่สำเร็จ: ' + e.message); }
+function showNewClient() {
+  if (!needsAgent()) return;
+  root.innerHTML = '';
+  root.append(topbar(), h('div', { class: 'page' }, renderNewClient({
+    onCancel: () => nav('?view=clients'),
+    onCreate: async (fields, o) => {
+      const { id } = await createClient(fields, o);
+      nav(`?view=client&id=${id}`);
+    },
+  })), footer());
+  window.scrollTo({ top: 0 });
 }
 
 async function showClient(id) {
@@ -236,7 +236,7 @@ async function showClient(id) {
       data, unlinked,
       onBack: () => nav('?view=clients'),
       onSaveClient: (fields) => updateClient(id, fields),
-      onDeleteClient: async () => { await deleteClient(id); nav('?view=clients'); },
+      onDeleteClient: async (o) => { await deleteClient(id, o || {}); nav('?view=clients'); },
       onAddPolicy: (fields) => addPolicy(id, fields),
       onUpdatePolicy: (pid, fields) => updatePolicy(pid, fields),
       onDeletePolicy: (pid) => deletePolicy(pid),
@@ -269,17 +269,21 @@ async function showFollowups() {
   if (!needsAgent()) return;
   loadingShell();
   try {
-    const [reminders, renewals, birthdays, resale] = await Promise.all([
-      listReminders(), upcomingRenewals(90), birthdaysThisMonth(), resaleOpportunities(),
+    const [allReminders, renewals, birthdays, resaleAll, stale] = await Promise.all([
+      listReminders({ includeDone: true }), upcomingRenewals(90), birthdaysThisMonth(), resaleOpportunities(), staleProspects(24),
     ]);
+    const reminders = allReminders.filter((r) => !r.done);
+    const dismissed = new Set(allReminders.filter((r) => r.kind === 'resale' && r.done).map((r) => r.client_id));
+    const resale = resaleAll.filter((r) => !dismissed.has(r.client_id));
     const node = renderFollowups({
-      reminders, renewals, birthdays, resale,
+      reminders, renewals, birthdays, resale, stale,
       onBack: () => nav('?view=dashboard'),
       onOpenClient: (id) => nav(`?view=client&id=${id}`),
       onAddReminder: (f) => createReminder(f),
       onToggleDone: (rid, done) => setReminderDone(rid, done),
       onSnooze: (rid, days) => snoozeReminder(rid, days),
       onDeleteReminder: (rid) => deleteReminder(rid),
+      onDismissResale: (cid) => dismissResale(cid, 6),
       onLogOutcome: (f) => addInteraction(f),
       onMarkPaid: (pid) => markPremiumPaid(pid),
     });
@@ -302,7 +306,7 @@ function showQuick() {
     onRestart: () => showQuick(),
     canSaveProspect: hasSupabase && !!agent?.id,
     onSaveProspect: async ({ name, detail, dueDate }) => {
-      const { id } = await createClient({ full_name: name }, { consent: true, stage: 'prospect' });
+      const { id } = await createClient({ full_name: name }, { consent: true, stage: 'prospect', consentVersion: POLICY_VERSION });
       await createReminder({ client_id: id, kind: 'nurture', title: `ติดตามผู้มุ่งหวัง: ${name}`, detail, due_date: dueDate });
       return id;
     },

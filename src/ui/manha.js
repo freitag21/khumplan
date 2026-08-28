@@ -127,26 +127,28 @@ function nurtureBox(res, opts, values) {
     h('option', { value: '365' }, 'ตามใน 12 เดือน'));
   whenEl.value = suggested;
   const msg = h('div', { class: 'auth-fine' });
-  const manhaSummary = [
+  const healthOptIn = h('input', { type: 'checkbox' });
+  // สรุปที่ไม่มีข้อมูลสุขภาพ (ค่าเริ่มต้น) vs มีข้อมูลสุขภาพ (ต้อง opt-in)
+  const baseSummary = [
     res.headline,
     'ขั้นถัดไป: ' + res.nextStep,
     res.queue !== 'ปกติ' ? `คิว: ${res.queue}` : null,
     values.age ? `อายุ ~${values.age} ปี` : null,
     res.budget ? `งบเบี้ย ~${res.budget.toLocaleString('th-TH')} บาท/เดือน` : null,
-    'MANHA: ' + res.dimensions.map((d) => `${d.letter}=${STATUS_META[d.status].label}`).join(' · '),
   ].filter(Boolean).join('\n');
+  const healthLine = 'MANHA: ' + res.dimensions.map((d) => `${d.letter}=${STATUS_META[d.status].label}`).join(' · ');
   const btn = h('button', { class: 'btn btn-primary ap-fill',
     onclick: async () => {
       const name = nameEl.value.trim();
       const why = whyEl.value.trim();
       if (!name) { msg.style.color = 'var(--ap-bad)'; msg.textContent = 'กรุณากรอกชื่อผู้มุ่งหวัง'; return; }
       if (!why) { msg.style.color = 'var(--ap-bad)'; msg.textContent = 'กรุณาระบุว่าจะกลับไปคุยเรื่องอะไร'; return; }
-      if (!confirm(`บันทึก "${name}" เป็นผู้มุ่งหวังในสมุดลูกค้า + ตั้งเตือนติดตาม\n\nกด "ตกลง" เพื่อยืนยันว่าได้รับความยินยอมในการเก็บข้อมูลแล้ว (PDPA — ข้อมูลสุขภาพเป็นข้อมูลอ่อนไหว)`)) return;
+      if (!confirm(`บันทึก "${name}" เป็นผู้มุ่งหวังในสมุดลูกค้า + ตั้งเตือนติดตาม\n\nกด "ตกลง" เพื่อยืนยันว่าได้รับความยินยอมในการเก็บข้อมูลแล้ว (PDPA)`)) return;
       btn.disabled = true; msg.textContent = '';
       try {
         const days = Number(whenEl.value);
         const due = new Date(); due.setDate(due.getDate() + days);
-        const detail = `${why}\n\n${manhaSummary}`;
+        const detail = `${why}\n\n${baseSummary}` + (healthOptIn.checked ? `\n${healthLine}` : '');
         await opts.onSaveProspect({ name, detail, dueDate: due.toISOString().slice(0, 10) });
         msg.style.color = 'var(--ap-ok)'; msg.textContent = 'บันทึกแล้ว — ดูได้ที่ "งานติดตาม"';
         btn.disabled = true;
@@ -157,6 +159,8 @@ function nurtureBox(res, opts, values) {
     healthPending ? h('div', { class: 'auth-fine' }, 'H = ต้องจัดการก่อน — ตั้งเตือนตามวันที่คาดว่าจบการรักษา') : null,
     h('div', { style: 'display:flex;gap:8px;flex-wrap:wrap;margin:10px 0' }, nameEl, whenEl),
     whyEl,
+    h('label', { class: 'auth-fine', style: 'display:flex;gap:8px;align-items:flex-start;margin-top:10px' },
+      healthOptIn, h('span', {}, 'บันทึกสถานะสุขภาพจากการคัดกรองด้วย (เก็บก็ต่อเมื่อได้รับความยินยอมโดยชัดแจ้งจากผู้มุ่งหวังแล้ว — ค่าเริ่มต้นคือไม่เก็บ)')),
     h('div', { style: 'margin-top:10px' }, btn), msg);
 }
 

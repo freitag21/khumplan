@@ -1,6 +1,6 @@
 -- คุ้มแพลน (KhumPlan) — SQL ตั้งค่าครบในไฟล์เดียว
 -- วางทั้งหมดนี้ใน Supabase Dashboard → SQL Editor → Run
--- (รวม migration 0001 + 0002 + 0003 + 0004 + 0005 + 0006 + 0007 · รันซ้ำได้ ปลอดภัย)
+-- (รวม migration 0001 + 0002 + 0003 + 0004 + 0005 + 0006 + 0007 + 0008 · รันซ้ำได้ ปลอดภัย)
 
 -- ═══════════ ตาราง agents (โปรไฟล์ตัวแทน) ═══════════
 create table if not exists public.agents (
@@ -270,3 +270,8 @@ alter table public.interactions enable row level security;
 drop policy if exists "interactions owner all" on public.interactions;
 create policy "interactions owner all" on public.interactions
   for all using (auth.uid() = agent_id) with check (auth.uid() = agent_id);
+
+-- ═══════════ 0008 · เวอร์ชันความยินยอมของลูกค้า ═══════════
+
+alter table public.clients
+  add column if not exists consent_version text;
