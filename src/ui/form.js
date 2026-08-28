@@ -10,10 +10,10 @@ const SAMPLE = {
   monthlyIncome: 60000, otherAnnualIncome: 120000, monthlyHouseholdExpense: 40000,
   totalDebt: 2500000, liquidAssets: 600000, premiumBudgetMonthly: 5000,
   existingLifeSum: 1000000, existingHealthRoom: 0, existingHealthAnnual: 0, existingHealthCopay: false,
-  existingCiSum: 0, existingPaSum: 500000, hasDisabilityIncome: 'no',
+  existingCiSum: 0, existingPaSum: 500000, existingTpdSum: 0, disabilityBenefitMonthly: 0, hasWaiverOfPremium: false,
   existingRetirementSavings: 800000, existingEducationSavings: 200000,
   stateHealth: 'sso', groupLifeSum: 1000000, groupHealthRoom: 2000, groupHealthAnnual: 500000,
-  groupHasCi: false, pvdMonthlyContribution: 6000, ssoPensionMonthly: 4000, rmfSsfPvdAnnual: 72000,
+  groupHasCi: false, groupTpdSum: 0, pvdMonthlyContribution: 6000, ssoPensionMonthly: 4000, rmfSsfPvdAnnual: 72000,
   retireAge: 60, hospitalTier: 'private_standard', lifeHealthPremiumPaid: 30000, pensionPremiumPaid: 0,
   parentsInCare: 2, mortgageInterestPaid: 90000, riskTolerance: 'unknown',
 };

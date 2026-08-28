@@ -4,6 +4,8 @@ import {
   LIFE,
   CI,
   ACCIDENT,
+  DISABILITY,
+  SSO_DISABILITY,
   HEALTH_TARGETS,
   STATE_HEALTH,
   EDUCATION_PRESETS,
@@ -232,37 +234,94 @@ export function analyzeCriticalIllness(input) {
   };
 }
 
-export function analyzeAccident(input) {
+/** เงินทดแทนทุพพลภาพจากประกันสังคม (บาท/เดือน) — ประมาณจากสิทธิรักษาหลัก */
+function ssoDisabilityMonthly(input) {
+  return input.stateHealth === 'sso' ? SSO_DISABILITY.ssoMonthly : SSO_DISABILITY.none;
+}
+
+/**
+ * ทุพพลภาพถาวรสิ้นเชิง (TPD) — เป็นหมวดเต็ม (นับในช่องว่างรวม + ลำดับความเร่งด่วน + คะแนน)
+ * need = ทดแทนรายได้ที่ขาด (หลังหัก ปกส.) + ปลดหนี้เต็มจำนวน + ค่าดูแล/ปรับสภาพบ้าน
+ * PA (อุบัติเหตุ) เป็นบรรทัดเสริมใต้การ์ดนี้ ไม่ใช่หมวดแยก
+ */
+export function analyzeDisability(input) {
+  const age = n(input.age);
+  const retireAge = n(input.retireAge) || RETIREMENT.defaultRetireAge;
+  const rReal = realRate(preRate(input), RATES.inflation);
+  const years = clampMin(retireAge - age, DISABILITY.minYearsToRetirement);
+  const pvYears = pvAnnuityFactor(rReal, years);
+
+  // A. ทดแทนรายได้ที่ขาด (หลังหักเงินทดแทน ปกส. รายเดือน) — ไม่หัก consumption
+  const monthlyIncome = n(input.monthlyIncome);
+  const ssoMonthly = ssoDisabilityMonthly(input);
+  const netMonthlyShort = clampMin(monthlyIncome * DISABILITY.incomeReplacementRatio - ssoMonthly);
+  const incomeNeed = netMonthlyShort * 12 * pvYears;
+
+  // B. ปลดหนี้เต็มจำนวน
+  const debt = n(input.totalDebt) + (input.businessOwner ? n(input.personalGuaranteeDebt) : 0);
+
+  // C. ค่าดูแล + ปรับสภาพบ้าน (ก้อนที่ประกันสุขภาพไม่จ่าย)
+  const careFactor = ov(input, 'disabilityCareFactor', 1);
+  const careYears = ov(input, 'disabilityCareYears', DISABILITY.careYears);
+  const careNeed = (DISABILITY.homeModification + DISABILITY.careCostMonthly * 12 * pvAnnuityFactor(rReal, careYears)) * careFactor;
+
   const annualIncome = annualIncomeOf(input);
-  const need = annualIncome * ACCIDENT.paIncomeMultiple;
-  const have = n(input.existingPaSum);
+  const cap = annualIncome * DISABILITY.capMultipleOfAnnualIncome + debt;
+  let need = incomeNeed + debt + careNeed;
+  const capped = need > cap && cap > 0;
+  if (capped) need = cap;
+  need = Math.max(need, DISABILITY.minimum);
+
+  // have: ทุน TPD ก้อน + ชดเชยรายได้รายเดือนแปลงเป็นทุน + TPD กลุ่ม (เฉพาะก้อน)
+  const personalTpd = n(input.existingTpdSum);
+  const monthlyBenefitAsLump = n(input.disabilityBenefitMonthly) * 12 * pvYears;
+  const groupTpd = n(input.groupTpdSum);
+  const personalHave = personalTpd + monthlyBenefitAsLump;
+  const have = personalHave + groupTpd;
   const gap = clampMin(need - have);
 
-  const disabilityTarget = n(input.monthlyIncome) * ACCIDENT.disabilityIncomeReplacement;
-  const disabilityBenefit = input.hasDisabilityIncome ? n(input.disabilityBenefitMonthly) : 0;
-  const disabilityGap = clampMin(disabilityTarget - disabilityBenefit);
+  // "ok" ปลอม: ถ้าความคุ้มครองมาจากประกันกลุ่มอย่างเดียว → บังคับเป็นช่องว่าง
+  const groupOnly = personalHave <= 0 && groupTpd > 0;
+  let status = statusOf(have, gap);
+  if (groupOnly && status === 'ok') status = 'gap';
+
+  // PA (อุบัติเหตุ) — บรรทัดเสริม ไม่ใช่หมวดแยก
+  const paNeed = annualIncome * ACCIDENT.paIncomeMultiple;
+  const paHave = n(input.existingPaSum);
+  const paGap = clampMin(paNeed - paHave);
+
+  const notes = [
+    `"ควรมี" = ทดแทนรายได้ที่ขาด ${bn(netMonthlyShort)} บาท/เดือน เป็นเวลา ${years} ปี` +
+      (ssoMonthly > 0 ? ` (หลังหักเงินทดแทนทุพพลภาพ ปกส. ~${bn(ssoMonthly)} บาท/เดือน)` : '') +
+      ` + ปลดหนี้ ${bn(debt)} + ค่าดูแลและปรับสภาพบ้าน ${bn(careNeed)} (วางแผนดูแล ${careYears} ปีแรก)`,
+    'ประกันสุขภาพจ่าย “ตอนอยู่โรงพยาบาล” ไม่จ่าย “ตอนกลับมาอยู่บ้าน” — ก้อนค่าดูแลข้างต้นคือส่วนที่ต้องเตรียมเอง',
+    paGap > 0
+      ? `ทุนอุบัติเหตุ (PA) เสริม: มี ${bn(paHave)} / แนะนำ ${bn(paNeed)} (${ACCIDENT.paIncomeMultiple} เท่ารายได้/ปี) — เบี้ยหลักพัน เป็นส่วนเสริม ไม่ใช่ทุนคุ้มครองอีกก้อน`
+      : `ทุนอุบัติเหตุ (PA) เสริม: ${bn(paHave)} — เพียงพอแล้ว`,
+  ];
+  if (groupTpd > 0) notes.push(`รวม TPD กลุ่มจากที่ทำงาน ${bn(groupTpd)} — ทุพพลภาพ = พ้นสภาพพนักงานแน่นอน ค่ารักษากลุ่มจะหายไปพร้อมกันในตอนที่ต้องใช้มากที่สุด`);
+  if (input.hasWaiverOfPremium) notes.push('มีสัญญายกเว้นการชำระเบี้ย (WP) — ความคุ้มครองเดิมอยู่ต่อโดยไม่ต้องจ่ายเบี้ย แต่ไม่มีเงินสดออกมาใช้ จึงไม่นับเป็นทุน');
+  if (capped) notes.push(`จำกัดทุนไว้ที่ ${DISABILITY.capMultipleOfAnnualIncome} เท่าของรายได้ต่อปี + หนี้`);
 
   return {
-    key: 'accident',
-    label: 'อุบัติเหตุ / ทุพพลภาพ',
-    have,
+    key: 'disability',
+    label: 'ทุพพลภาพ / คุ้มครองรายได้',
+    have: Math.round(have),
     need: Math.round(need),
     gap: Math.round(gap),
     severity: severityFromGap(gap, need),
     coverage: covFromSeverity(severityFromGap(gap, need)),
-    status: statusOf(have, gap),
-    excludeFromTotal: true, // เป็นส่วนเสริม ไม่นับซ้ำกับทุนชีวิต
+    status,
     detail: {
-      disabilityTargetMonthly: Math.round(disabilityTarget),
-      disabilityBenefitMonthly: Math.round(disabilityBenefit),
-      disabilityGapMonthly: Math.round(disabilityGap),
+      incomeNeed: Math.round(incomeNeed),
+      careNeed: Math.round(careNeed),
+      debt: Math.round(debt),
+      ssoMonthly,
+      years,
+      groupOnly,
+      pa: { have: Math.round(paHave), need: Math.round(paNeed), gap: Math.round(paGap) },
     },
-    notes: [
-      `ทุน PA แนะนำ ${ACCIDENT.paIncomeMultiple} เท่าของรายได้ต่อปี เบี้ยถูกเมื่อเทียบกับทุน — เป็นส่วนเสริม ไม่ใช่ทุนคุ้มครองอีกก้อน (จึงไม่รวมในช่องว่างรวม)`,
-      input.hasDisabilityIncome
-        ? `ชดเชยรายได้ทุพพลภาพเป้าหมาย ${bn(disabilityTarget)} บาท/เดือน`
-        : 'ยังไม่มีความคุ้มครองกรณีทุพพลภาพสิ้นเชิงถาวร (จ่ายก้อน / ยกเว้นเบี้ย)',
-    ],
+    notes,
   };
 }
 
@@ -447,7 +506,7 @@ export function analyze(input) {
     analyzeLife(input),
     analyzeHealth(input),
     analyzeCriticalIllness(input),
-    analyzeAccident(input),
+    analyzeDisability(input),
     analyzeRetirement(input),
     analyzeEducation(input),
   ];

@@ -3,7 +3,7 @@ import { POLICY_VERSION } from '../auth.js';
 
 /* ─────────── ป้ายภาษาไทย ─────────── */
 export const KIND_LABEL = {
-  life: 'ชีวิต', health: 'สุขภาพ', ci: 'โรคร้ายแรง', pa: 'อุบัติเหตุ (PA)',
+  life: 'ชีวิต', health: 'สุขภาพ', ci: 'โรคร้ายแรง', pa: 'อุบัติเหตุ (PA)', disability: 'ทุพพลภาพ (TPD/DI)',
   annuity: 'บำนาญ', savings: 'สะสมทรัพย์', unitlinked: 'ยูนิตลิงก์', group: 'ประกันกลุ่ม', other: 'อื่น ๆ',
 };
 const STATUS_LABEL = {

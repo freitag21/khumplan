@@ -398,7 +398,6 @@ async function showShared(slug) {
 function formValuesFrom(input) {
   const v = { ...input };
   if (typeof v.spouseIncomeShare === 'number') v.spouseIncomeShare = Math.round(v.spouseIncomeShare * 100);
-  v.hasDisabilityIncome = input.hasDisabilityIncome ? 'yes' : 'no';
   return v;
 }
 

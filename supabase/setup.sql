@@ -1,6 +1,6 @@
 -- คุ้มแพลน (KhumPlan) — SQL ตั้งค่าครบในไฟล์เดียว
 -- วางทั้งหมดนี้ใน Supabase Dashboard → SQL Editor → Run
--- (รวม migration 0001 + 0002 + 0003 + 0004 + 0005 + 0006 + 0007 + 0008 · รันซ้ำได้ ปลอดภัย)
+-- (รวม migration 0001 + 0002 + 0003 + 0004 + 0005 + 0006 + 0007 + 0008 + 0009 · รันซ้ำได้ ปลอดภัย)
 
 -- ═══════════ ตาราง agents (โปรไฟล์ตัวแทน) ═══════════
 create table if not exists public.agents (
@@ -167,7 +167,7 @@ create table if not exists public.policies (
   client_id     uuid not null references public.clients (id) on delete cascade,
   agent_id      uuid not null references public.agents (id) on delete cascade,
   kind          text not null default 'life'
-                  check (kind in ('life','health','ci','pa','annuity','savings','unitlinked','group','other')),
+                  check (kind in ('life','health','ci','pa','disability','annuity','savings','unitlinked','group','other')),
   insurer       text,
   plan_name     text,
   sum_assured   numeric,
@@ -275,3 +275,10 @@ create policy "interactions owner all" on public.interactions
 
 alter table public.clients
   add column if not exists consent_version text;
+
+-- ═══════════ 0009 · ประเภทกรมธรรม์ "ทุพพลภาพ" (TPD / DI) ═══════════
+
+alter table public.policies drop constraint if exists policies_kind_check;
+alter table public.policies
+  add constraint policies_kind_check
+  check (kind in ('life','health','ci','pa','disability','annuity','savings','unitlinked','group','other'));

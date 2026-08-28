@@ -13,6 +13,7 @@ const TYPE_LABELS = {
   term_life: 'ประกันชีวิตแบบคุ้มครองสูง (ชั่วระยะเวลา / Term)',
   whole_life: 'ประกันชีวิตตลอดชีพ',
   pa_disability: 'ประกันอุบัติเหตุ / ทุพพลภาพ',
+  disability_income: 'ประกันทุพพลภาพ / คุ้มครองรายได้ (TPD / DI) + PA',
   pension: 'ประกันบำนาญ',
   savings_endowment: 'ประกันสะสมทรัพย์',
   unit_linked: 'ยูนิตลิงก์ (ความคุ้มครอง + ลงทุน)',
@@ -70,10 +71,11 @@ export function recommend(result) {
     }
   }
 
-  // 4) อุบัติเหตุ / ทุพพลภาพ — ส่วนเสริมเบี้ยถูก
-  if (byKey.accident.status !== 'ok') {
-    add('pa_disability', byKey.accident.detail?.disabilityGapMonthly > 0 ? 'medium' : 'low',
-      'เสริมความคุ้มครองอุบัติเหตุและกรณีทุพพลภาพสิ้นเชิงถาวร เบี้ยถูกเมื่อเทียบกับทุน');
+  // 4) ทุพพลภาพ / คุ้มครองรายได้ — รายได้หยุด ค่าใช้จ่ายเพิ่ม
+  if (byKey.disability && byKey.disability.status !== 'ok') {
+    add('disability_income', byKey.disability.status === 'none' ? 'high' : 'medium',
+      `ยังขาดความคุ้มครองกรณีทุพพลภาพถาวรสิ้นเชิงราว ${short(byKey.disability.gap)} — ทดแทนรายได้ที่ขาด ปลดหนี้ และค่าดูแลที่ประกันสุขภาพไม่ครอบคลุม` +
+      (byKey.disability.detail?.pa?.gap > 0 ? ' · เสริมทุนอุบัติเหตุ (PA) เบี้ยหลักพัน' : ''));
   }
 
   // 5) เกษียณ

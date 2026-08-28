@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { analyze, analyzeLife, analyzeRetirement, analyzeHealth } from '../src/lib/needs.js';
+import { analyze, analyzeLife, analyzeRetirement, analyzeHealth, analyzeDisability } from '../src/lib/needs.js';
 import { marginalRate, taxOn, analyzeTax } from '../src/lib/tax.js';
 import { recommend } from '../src/lib/recommend.js';
 import { screenManha } from '../src/lib/manha.js';
@@ -116,15 +116,48 @@ describe('analyze (รวม)', () => {
     expect(Array.isArray(r.summary.strengths)).toBe(true);
   });
 
-  it('อุบัติเหตุไม่ถูกนับใน protectionGap และไม่อยู่ในลำดับความเร่งด่วน/ก้าวแรก', () => {
+  it('ทุพพลภาพเป็นหมวดเต็ม (6 หมวด, เข้า priorityOrder ได้) · PA เป็นบรรทัดเสริม', () => {
     const r = analyze(base);
-    const acc = r.categories.find((c) => c.key === 'accident');
-    expect(acc.excludeFromTotal).toBe(true);
-    const ci = r.categories.find((c) => c.key === 'ci');
-    const life = r.categories.find((c) => c.key === 'life');
-    expect(r.summary.protectionGap).toBe(life.gap + ci.gap);
-    expect(r.summary.priorityOrder).not.toContain('accident');
-    expect(r.summary.firstStep?.key).not.toBe('accident');
+    expect(r.categories).toHaveLength(6);
+    expect(r.categories.map((c) => c.key)).toEqual(['life', 'health', 'ci', 'disability', 'retirement', 'education']);
+    expect(r.categories.find((c) => c.key === 'accident')).toBeUndefined();
+    const dis = r.categories.find((c) => c.key === 'disability');
+    expect(dis.excludeFromTotal).toBeFalsy();
+    expect(dis.detail.pa.have).toBe(500000); // existingPaSum ยังถูกอ่านเป็นบรรทัดเสริม
+    // มีช่องว่างทุพพลภาพ (have=0) → อยู่ใน priorityOrder
+    expect(r.summary.priorityOrder).toContain('disability');
+  });
+
+  it('ทุพพลภาพ: เกษียณแล้ว/ไม่มีรายได้ → ยังมี need (ค่าดูแล) ไม่พัง', () => {
+    const r = analyzeDisability({ ...base, age: 65, retireAge: 60, monthlyIncome: 0, totalDebt: 0 });
+    expect(r.need).toBeGreaterThanOrEqual(1000000); // อย่างน้อย DISABILITY.minimum
+    expect(Number.isFinite(r.need)).toBe(true);
+    expect(Number.isFinite(r.gap)).toBe(true);
+  });
+
+  it('ทุพพลภาพ: มีแต่ประกันกลุ่ม (TPD กลุ่มก้อนใหญ่) → บังคับเป็นช่องว่าง ไม่ "ok" ปลอม', () => {
+    const r = analyzeDisability({ ...base, groupTpdSum: 99000000, existingTpdSum: 0, disabilityBenefitMonthly: 0 });
+    expect(r.status).toBe('gap');
+    expect(r.detail.groupOnly).toBe(true);
+  });
+
+  it('ทุพพลภาพ: WP อย่างเดียว ไม่นับเป็นทุน (have ไม่ขยับ) + มี note', () => {
+    const withWp = analyzeDisability({ ...base, hasWaiverOfPremium: true, existingTpdSum: 0, disabilityBenefitMonthly: 0 });
+    const without = analyzeDisability({ ...base, hasWaiverOfPremium: false, existingTpdSum: 0, disabilityBenefitMonthly: 0 });
+    expect(withWp.have).toBe(without.have);
+    expect(withWp.notes.some((t) => t.includes('ยกเว้นการชำระเบี้ย'))).toBe(true);
+  });
+
+  it('ทุพพลภาพ: ทุน TPD ก้อนใหญ่ → ปิดช่องว่างได้ (status ok)', () => {
+    const r = analyzeDisability({ ...base, existingTpdSum: 99000000, totalDebt: 0 });
+    expect(r.gap).toBe(0);
+    expect(r.status).toBe('ok');
+  });
+
+  it('ทุพพลภาพ: หัก ปกส. (sso) ทำให้ส่วนทดแทนรายได้ต่ำกว่าไม่มีสิทธิรัฐ', () => {
+    const withSso = analyzeDisability({ ...base, stateHealth: 'sso' });
+    const noState = analyzeDisability({ ...base, stateHealth: 'none' });
+    expect(withSso.detail.incomeNeed).toBeLessThan(noState.detail.incomeNeed);
   });
 
   it('summary.gapDetail: มีทุกหมวดใน priorityOrder และ have + gap = need', () => {

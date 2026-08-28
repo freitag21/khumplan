@@ -24,12 +24,12 @@ export function buildPyramid(result) {
       key: 'protection',
       title: 'ป้องกันความเสี่ยง',
       subtitle: 'รากฐาน — ต้องมั่นคงก่อน',
-      // อุบัติเหตุ/ทุพพลภาพเป็น "ส่วนเสริม" — ไม่นับในค่าเฉลี่ยชั้นรากฐาน (สอดคล้องกับช่องว่างรวม)
       items: [
         item(`เงินสำรองฉุกเฉิน (${LIFE.emergencyFundMonths} เดือน)`, emCoverage),
         item('ประกันสุขภาพ', byKey.health.coverage, byKey.health.status),
         item(byKey.life.label, byKey.life.coverage, byKey.life.status),
         item('ประกันโรคร้ายแรง', byKey.ci.coverage, byKey.ci.status),
+        item('ทุพพลภาพ / คุ้มครองรายได้', byKey.disability.coverage, byKey.disability.status),
       ],
     },
     {

@@ -169,6 +169,7 @@ export function coverageFromPolicies(policies = []) {
     if (p.kind === 'ci') add(grp ? 'groupCiSum' : 'existingCiSum', p.ci_sum || p.sum_assured);
     else if (p.ci_sum) add(grp ? 'groupCiSum' : 'existingCiSum', p.ci_sum);
     if (p.kind === 'pa') add('existingPaSum', p.sum_assured);
+    if (p.kind === 'disability') add(grp ? 'groupTpdSum' : 'existingTpdSum', p.sum_assured);
     if (p.kind === 'health' || p.kind === 'group') {
       max(grp ? 'groupHealthRoom' : 'existingHealthRoom', p.health_room_daily);
       max(grp ? 'groupHealthAnnual' : 'existingHealthAnnual', p.health_annual);
@@ -507,14 +508,15 @@ const GAP_COVER = {
   life: ['life', 'unitlinked'],
   health: ['health'],
   ci: ['ci'],
+  disability: ['disability'],
   retirement: ['annuity', 'savings'],
   education: ['savings', 'annuity'],
 };
-/* หมวดที่ประกันกลุ่มพอจะรองรับได้ชั่วคราว */
+/* หมวดที่ประกันกลุ่มพอจะรองรับได้ชั่วคราว (ทุพพลภาพไม่รวม — พ้นสภาพพนักงานแน่นอน) */
 const GROUP_COVER = { life: true, health: true, ci: true };
 const GAP_LABEL = {
   life: 'ทุนประกันชีวิต', health: 'ประกันสุขภาพ', ci: 'โรคร้ายแรง',
-  accident: 'อุบัติเหตุ / ทุพพลภาพ', retirement: 'เงินออมเพื่อเกษียณ', education: 'ทุนการศึกษาบุตร',
+  disability: 'ทุพพลภาพ / คุ้มครองรายได้', retirement: 'เงินออมเพื่อเกษียณ', education: 'ทุนการศึกษาบุตร',
 };
 const STALE_DAYS = 400;
 

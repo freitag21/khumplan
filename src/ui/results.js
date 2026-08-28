@@ -101,7 +101,7 @@ export function renderResults(result, opts = {}) {
   const sorted = [...applicable].sort((a, b) => b.severity - a.severity);
   wrap.append(h('div', { class: 'section sec-severity' },
     h('h2', {}, 'ระดับช่องว่างแต่ละด้าน'),
-    h('div', { class: 'section-hint' }, 'แถบยาวกว่า = ควรวางแผนก่อน (0–100) · อุบัติเหตุ/ทุพพลภาพเป็นส่วนเสริม ไม่รวมในช่องว่างรวม'),
+    h('div', { class: 'section-hint' }, 'แถบยาวกว่า = ควรวางแผนก่อน (0–100)'),
     h('div', { class: 'sev-list' }, ...sorted.map((c) => sevRow(c.label, c.severity, c.status === 'ok')))));
 
   /* category cards — ซ่อนตอนพิมพ์ (ใช้ตารางแทน) */
@@ -275,8 +275,7 @@ function printCatTable(sorted) {
     );
   });
 
-  const hint = 'แถบใต้ชื่อด้าน = ระดับความเร่งด่วน (0–100) · ตัวเลขเป็นบาท ยกเว้นประกันสุขภาพเป็นบาท/วัน · ' +
-    'อุบัติเหตุ/ทุพพลภาพเป็นส่วนเสริม ไม่รวมในช่องว่างรวม' +
+  const hint = 'แถบใต้ชื่อด้าน = ระดับความเร่งด่วน (0–100) · ตัวเลขเป็นบาท ยกเว้นประกันสุขภาพเป็นบาท/วัน' +
     (hasSchoolFee ? ' · * การศึกษา: ยังไม่รวมค่าเทอมรายปีที่เตรียมจากกระแสเงินสด' : '');
 
   return h('div', { class: 'section print-only print-cat-wrap' },
