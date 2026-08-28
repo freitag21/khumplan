@@ -127,6 +127,15 @@ describe('analyze (รวม)', () => {
     expect(r.summary.firstStep?.key).not.toBe('accident');
   });
 
+  it('summary.gapDetail: มีทุกหมวดใน priorityOrder และ have + gap = need', () => {
+    const r = analyze(base);
+    expect(Array.isArray(r.summary.gapDetail)).toBe(true);
+    expect(r.summary.gapDetail.map((d) => d.key)).toEqual(r.summary.priorityOrder);
+    for (const d of r.summary.gapDetail) {
+      expect(Math.abs(d.have + d.gap - d.need)).toBeLessThanOrEqual(1); // เผื่อปัดเศษ
+    }
+  });
+
   it('ไม่มีบุตร → หมวดการศึกษา applicable=false และไม่ถ่วงคะแนน', () => {
     const r = analyze({ ...base, children: [] });
     const edu = r.categories.find((c) => c.key === 'education');

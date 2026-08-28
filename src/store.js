@@ -458,23 +458,29 @@ export async function birthdaysThisMonth() {
     .sort((a, b) => a.day - b.day);
 }
 
-/* หมวด Protection Gap → ประเภทกรมธรรม์ที่ถือว่าครอบคลุมหมวดนั้น */
+/* หมวด Protection Gap → ประเภทกรมธรรม์ส่วนตัวที่ถือว่าครอบคลุม (ไม่รวม 'group' — สวัสดิการหายเมื่อออกจากงาน) */
 const GAP_COVER = {
-  life: ['life', 'unitlinked', 'group'],
-  health: ['health', 'group'],
+  life: ['life', 'unitlinked'],
+  health: ['health'],
   ci: ['ci'],
-  accident: ['pa', 'group'],
-  retirement: ['annuity', 'savings', 'unitlinked'],
-  education: ['savings', 'unitlinked', 'annuity'],
+  retirement: ['annuity', 'savings'],
+  education: ['savings', 'annuity'],
 };
+/* หมวดที่ประกันกลุ่มพอจะรองรับได้ชั่วคราว */
+const GROUP_COVER = { life: true, health: true, ci: true };
 const GAP_LABEL = {
   life: 'ทุนประกันชีวิต', health: 'ประกันสุขภาพ', ci: 'โรคร้ายแรง',
   accident: 'อุบัติเหตุ / ทุพพลภาพ', retirement: 'เงินออมเพื่อเกษียณ', education: 'ทุนการศึกษาบุตร',
 };
+const STALE_DAYS = 400;
 
 /**
- * ธง resale — ลูกค้าที่ผลวิเคราะห์ล่าสุดมีช่องว่างในหมวดที่ยังไม่มีกรมธรรม์รองรับ
- * คืน [{ client_id, client_name, gaps:[label], analysisDate }]
+ * ธง resale จากผลวิเคราะห์ล่าสุดที่ผูกกับลูกค้า
+ * คืน [{ client_id, client_name, analysisDate, stale, gaps:[label], groupOnly:[label], underinsured:[label] }]
+ *  - gaps         = หมวดที่มีช่องว่าง และไม่มีกรมธรรม์ส่วนตัวรองรับเลย
+ *  - groupOnly    = หมวดที่มีช่องว่าง มีแต่ประกันกลุ่มรองรับ (จะหายเมื่อออกจากงาน)
+ *  - underinsured = หมวดที่มีกรมธรรม์แล้วแต่ "มี" < 60% ของ "ควรมี"
+ *  - stale        = ผลวิเคราะห์เก่ากว่า ~13 เดือน → ควรทบทวนแผนประจำปี
  */
 export async function resaleOpportunities() {
   if (!hasSupabase) return [];
@@ -485,16 +491,38 @@ export async function resaleOpportunities() {
     .select('id, full_name, policies(kind, status), analyses(summary, created_at)')
     .eq('agent_id', user.id);
   if (error) throw error;
+  const now = Date.now();
   const out = [];
   for (const c of data ?? []) {
     const ana = (c.analyses ?? []).slice().sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))[0];
-    const order = ana?.summary?.priorityOrder;
+    const sum = ana?.summary;
+    const order = sum?.priorityOrder;
     if (!Array.isArray(order) || !order.length) continue;
-    const held = new Set((c.policies ?? []).filter((p) => p.status === 'active').map((p) => p.kind));
-    const gaps = order
-      .filter((k) => GAP_COVER[k] && !GAP_COVER[k].some((kind) => held.has(kind)))
-      .map((k) => GAP_LABEL[k] || k);
-    if (gaps.length) out.push({ client_id: c.id, client_name: c.full_name, gaps, analysisDate: ana.created_at });
+
+    const active = (c.policies ?? []).filter((p) => p.status === 'active');
+    const held = new Set(active.map((p) => p.kind));
+    const hasGroup = held.has('group');
+    const gapByKey = Object.fromEntries((sum.gapDetail || []).map((d) => [d.key, d]));
+
+    const gaps = [], groupOnly = [], underinsured = [];
+    for (const k of order) {
+      if (!GAP_COVER[k]) continue;
+      const coveredPersonal = GAP_COVER[k].some((kind) => held.has(kind));
+      if (coveredPersonal) {
+        const d = gapByKey[k];
+        if (d && d.need > 0 && d.have < 0.6 * d.need) underinsured.push(GAP_LABEL[k] || k);
+      } else if (hasGroup && GROUP_COVER[k]) {
+        groupOnly.push(GAP_LABEL[k] || k);
+      } else {
+        gaps.push(GAP_LABEL[k] || k);
+      }
+    }
+
+    const ageDays = ana.created_at ? (now - new Date(ana.created_at).getTime()) / 86400000 : 0;
+    const stale = ageDays > STALE_DAYS;
+    if (gaps.length || groupOnly.length || underinsured.length || stale) {
+      out.push({ client_id: c.id, client_name: c.full_name, analysisDate: ana.created_at, stale, gaps, groupOnly, underinsured });
+    }
   }
   return out;
 }

@@ -470,6 +470,13 @@ export function analyze(input) {
     .filter((c) => c.status !== 'ok' && c.applicable !== false && !c.excludeFromTotal)
     .sort((a, b) => b.severity - a.severity);
   const priorityOrder = ranked.map((c) => c.key);
+  // รายละเอียดช่องว่างต่อหมวด (สำหรับธง resale — เทียบ "มี" กับ "ควรมี")
+  const gapDetail = ranked.map((c) => ({
+    key: c.key,
+    need: Math.round(c.need || 0),
+    have: Math.round(c.have || 0),
+    gap: Math.round(c.gap || 0),
+  }));
 
   // "ก้าวแรก" = จัดการเฉพาะด้านที่เร่งที่สุด ไม่ใช่ทุกอย่างพร้อมกัน
   const top = ranked[0];
@@ -503,6 +510,7 @@ export function analyze(input) {
       firstStep,
       totalGap: protectionGap + savingsGap, // เก็บไว้เผื่อ backward compat — อย่าโชว์เป็นตัวเด่น
       priorityOrder,
+      gapDetail,
       overallScore,
       overallLevel,
       strengths: collectStrengths(input, categories),

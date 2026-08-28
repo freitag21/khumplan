@@ -46,14 +46,26 @@ function select(value, options, attrs = {}) {
  */
 export function renderClientList(opts = {}) {
   let clients = opts.clients || [];
+  let filter = 'all'; // all | customer | prospect
+  let sortBy = 'name'; // name | updated
   const listWrap = h('div', { class: 'dash-list' });
-  const search = h('input', { class: 'input', placeholder: 'ค้นหาชื่อ / ชื่อเล่น', style: 'width:220px', oninput: renderRows });
+  const search = h('input', { class: 'input', placeholder: 'ค้นหาชื่อ / ชื่อเล่น', style: 'width:200px', oninput: renderRows });
+
+  const chip = (key, label) => h('button', {
+    class: 'fu-chip' + (filter === key ? ' on' : ''),
+    onclick: () => { filter = key; chipRow.querySelectorAll('.fu-chip').forEach((b, i) => b.classList.toggle('on', ['all', 'customer', 'prospect'][i] === key)); renderRows(); },
+  }, label);
+  const chipRow = h('div', { class: 'fu-chips' });
+  const sortSel = h('select', { class: 'input', style: 'width:150px', onchange: () => { sortBy = sortSel.value; renderRows(); } },
+    h('option', { value: 'name' }, 'เรียงตามชื่อ'), h('option', { value: 'updated' }, 'อัปเดตล่าสุด'));
 
   function renderRows() {
     const q = search.value.trim().toLowerCase();
-    const rows = clients.filter((c) => !q
-      || (c.full_name || '').toLowerCase().includes(q)
-      || (c.nickname || '').toLowerCase().includes(q));
+    let rows = clients.filter((c) => (filter === 'all' || (c.stage || 'customer') === filter)
+      && (!q || (c.full_name || '').toLowerCase().includes(q) || (c.nickname || '').toLowerCase().includes(q)));
+    rows = rows.slice().sort((a, b) => sortBy === 'updated'
+      ? (b.updated_at || '').localeCompare(a.updated_at || '')
+      : (a.full_name || '').localeCompare(b.full_name || '', 'th'));
     listWrap.innerHTML = '';
     if (!rows.length) {
       listWrap.append(h('div', { class: 'dash-empty' },
@@ -78,19 +90,23 @@ export function renderClientList(opts = {}) {
             icon(ICONS.chevron, { size: 14, stroke: 'var(--ap-ink2)' })))));
     });
   }
+  chipRow.append(chip('all', 'ทั้งหมด'), chip('customer', 'ลูกค้า'), chip('prospect', 'ผู้มุ่งหวัง'));
   renderRows();
 
   const renewals = opts.renewals || [];
+  const nProspect = clients.filter((c) => c.stage === 'prospect').length;
 
   return h('div', { class: 'dashboard' },
     h('div', { class: 'dash-topbar' },
       h('div', {},
         h('h1', {}, 'สมุดลูกค้า'),
-        h('div', { class: 'muted', style: 'font-size:12.5px;margin-top:3px' }, `ทั้งหมด ${clients.length} คน`)),
+        h('div', { class: 'muted', style: 'font-size:12.5px;margin-top:3px' },
+          `${clients.length - nProspect} ลูกค้า · ${nProspect} ผู้มุ่งหวัง`)),
       h('div', { style: 'flex:1' }),
-      search,
+      sortSel, search,
       h('button', { class: 'btn btn-primary ap-fill', onclick: () => opts.onNew?.() },
         icon(ICONS.plus, { size: 13, width: 1.7 }), 'เพิ่มลูกค้า')),
+    chipRow,
 
     renewals.length
       ? h('div', { class: 'card ap-g elev-sm renew-card' },

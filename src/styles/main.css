@@ -834,6 +834,13 @@ ul.tax-note li { margin: 0; }
 .link-row:last-of-type { border-bottom: none; }
 .link-row .lr-name { flex: 1; font-size: 12.5px; }
 
+.fu-chips { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.fu-chip {
+  font-size: 12px; padding: 4px 12px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--ap-line); background: var(--ap-card); color: var(--ap-ink2);
+}
+.fu-chip.on { background: var(--ap-pri-soft); border-color: transparent; color: var(--ap-pri-ink); font-weight: 500; }
+
 .log-row { padding: 7px 0; border-bottom: 1px solid var(--ap-line); }
 .log-row:last-child { border-bottom: none; }
 .log-meta { font-size: 11px; }

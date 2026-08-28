@@ -19,6 +19,8 @@ const KIND_TAG = {
   custom: ['กำหนดเอง', 'p-info'],
 };
 
+const trimList = (arr) => arr.slice(0, 2).join(' · ') + (arr.length > 2 ? ` + อีก ${arr.length - 2}` : '');
+
 /** วันเกิดปีนี้ (clamp 29 ก.พ. → 28) จาก birth_date */
 function birthdayThisYear(birthDate) {
   const mm = Number(birthDate.slice(5, 7));
@@ -243,11 +245,18 @@ export function renderFollowups(opts = {}) {
 
     resale.length
       ? block('โอกาสเสนอเพิ่ม · จาก Protection Gap', resale.length,
-          ...resale.map((r) => autoRow(
-            r.client_name,
-            `ยังไม่มีความคุ้มครอง: ${r.gaps.slice(0, 2).join(' · ')}${r.gaps.length > 2 ? ` + อีก ${r.gaps.length - 2}` : ''} · จากผลวิเคราะห์ ${thDate(r.analysisDate)}`,
-            { kind: 'resale', title: `เสนอเพิ่ม: ${r.client_name} (${r.gaps[0]})`, due_date: isoPlus(14),
-              detail: `ช่องว่าง: ${r.gaps.join(', ')}`, client_id: r.client_id }))
-      )
+          ...resale.map((r) => {
+            const parts = [];
+            if (r.gaps?.length) parts.push(`ยังไม่มี: ${trimList(r.gaps)}`);
+            if (r.groupOnly?.length) parts.push(`มีแต่ประกันกลุ่ม (หายเมื่อออกจากงาน): ${trimList(r.groupOnly)}`);
+            if (r.underinsured?.length) parts.push(`ทุนยังน้อยกว่าที่ควรมี: ${trimList(r.underinsured)}`);
+            if (r.stale) parts.push('ผลวิเคราะห์เก่ากว่า 1 ปี — ควรทบทวนแผนประจำปี');
+            const primary = r.gaps?.[0] || r.groupOnly?.[0] || r.underinsured?.[0] || 'ทบทวนแผน';
+            return autoRow(
+              r.client_name,
+              `${parts.join(' · ')} · จากผลวิเคราะห์ ${thDate(r.analysisDate)}`,
+              { kind: 'resale', title: `เสนอเพิ่ม: ${r.client_name} (${primary})`, due_date: isoPlus(14),
+                detail: parts.join(' · '), client_id: r.client_id });
+          }))
       : null);
 }

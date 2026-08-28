@@ -103,25 +103,31 @@ function readout(res, opts, values) {
       ? h('button', { class: 'btn btn-secondary', onclick: goFull }, 'ทำ Protection Gap ต่ออยู่ดี')
       : h('button', { class: 'btn btn-primary ap-fill', onclick: goFull }, 'ทำ Protection Gap ต่อ', icon(ICONS.chevron, { size: 13, width: 1.7 }))));
 
-  if (res.tone !== 'go') {
-    if (opts.canSaveProspect && opts.onSaveProspect) {
-      wrap.append(nurtureBox(res, opts, values));
-    } else {
-      wrap.append(h('div', { class: 'followup-note' }, icon('M8 4v4l2.5 2.5', { size: 14, stroke: 'var(--ap-ink2)', width: 1.5 }),
-        'ผู้มุ่งหวังที่ยัง "ไม่ใช่ตอนนี้" คือเคสในอนาคต — เข้าสู่ระบบเพื่อบันทึกเป็นผู้มุ่งหวังและตั้งเตือนติดตาม'));
-    }
+  if (opts.canSaveProspect && opts.onSaveProspect) {
+    wrap.append(nurtureBox(res, opts, values));
+  } else if (res.tone !== 'go') {
+    wrap.append(h('div', { class: 'followup-note' }, icon('M8 4v4l2.5 2.5', { size: 14, stroke: 'var(--ap-ink2)', width: 1.5 }),
+      'ผู้มุ่งหวังที่ยัง "ไม่ใช่ตอนนี้" คือเคสในอนาคต — เข้าสู่ระบบเพื่อบันทึกเป็นผู้มุ่งหวังและตั้งเตือนติดตาม'));
   }
   return wrap;
 }
 
 function nurtureBox(res, opts, values) {
   const nameEl = h('input', { class: 'input', placeholder: 'ชื่อผู้มุ่งหวัง', value: values.prospectName || '', style: 'max-width:220px' });
-  const whenEl = h('select', { class: 'input', style: 'max-width:140px' },
-    h('option', { value: '90' }, 'ติดตามใน 3 เดือน'),
-    h('option', { value: '180' }, 'ติดตามใน 6 เดือน'),
-    h('option', { value: '365' }, 'ติดตามใน 12 เดือน'));
+  const whyEl = h('input', { class: 'input', placeholder: 'จะกลับไปคุยเรื่องอะไร (เช่น รอลูกเข้า ป.1 · รอขายที่ดิน)' });
+  // ช่วงเวลาแนะนำตามเหตุผลที่ MANHA เจอ
+  const moneyTight = res.dimensions.some((d) => d.letter === 'M' && d.status !== 'ok');
+  const healthPending = res.dimensions.some((d) => d.letter === 'H' && d.status === 'stop');
+  const suggested = res.tone === 'go' ? '30' : moneyTight ? '90' : '180';
+  const whenEl = h('select', { class: 'input', style: 'max-width:170px' },
+    h('option', { value: '14' }, 'ตามใน 2 สัปดาห์'),
+    h('option', { value: '30' }, 'ตามใน 1 เดือน'),
+    h('option', { value: '90' }, 'ตามใน 3 เดือน (หลังโบนัส/ปรับเงินเดือน)'),
+    h('option', { value: '180' }, 'ตามใน 6 เดือน'),
+    h('option', { value: '365' }, 'ตามใน 12 เดือน'));
+  whenEl.value = suggested;
   const msg = h('div', { class: 'auth-fine' });
-  const detail = [
+  const manhaSummary = [
     res.headline,
     'ขั้นถัดไป: ' + res.nextStep,
     res.queue !== 'ปกติ' ? `คิว: ${res.queue}` : null,
@@ -132,21 +138,26 @@ function nurtureBox(res, opts, values) {
   const btn = h('button', { class: 'btn btn-primary ap-fill',
     onclick: async () => {
       const name = nameEl.value.trim();
+      const why = whyEl.value.trim();
       if (!name) { msg.style.color = 'var(--ap-bad)'; msg.textContent = 'กรุณากรอกชื่อผู้มุ่งหวัง'; return; }
+      if (!why) { msg.style.color = 'var(--ap-bad)'; msg.textContent = 'กรุณาระบุว่าจะกลับไปคุยเรื่องอะไร'; return; }
       if (!confirm(`บันทึก "${name}" เป็นผู้มุ่งหวังในสมุดลูกค้า + ตั้งเตือนติดตาม\n\nกด "ตกลง" เพื่อยืนยันว่าได้รับความยินยอมในการเก็บข้อมูลแล้ว (PDPA — ข้อมูลสุขภาพเป็นข้อมูลอ่อนไหว)`)) return;
       btn.disabled = true; msg.textContent = '';
       try {
         const days = Number(whenEl.value);
         const due = new Date(); due.setDate(due.getDate() + days);
+        const detail = `${why}\n\n${manhaSummary}`;
         await opts.onSaveProspect({ name, detail, dueDate: due.toISOString().slice(0, 10) });
         msg.style.color = 'var(--ap-ok)'; msg.textContent = 'บันทึกแล้ว — ดูได้ที่ "งานติดตาม"';
         btn.disabled = true;
       } catch (e) { msg.style.color = 'var(--ap-bad)'; msg.textContent = 'บันทึกไม่สำเร็จ: ' + e.message; btn.disabled = false; }
     } }, 'บันทึกเป็นผู้มุ่งหวัง + ตั้งเตือน');
   return h('div', { class: 'nurture-box' },
-    h('div', { class: 'nb-head' }, 'ยัง "ไม่ใช่ตอนนี้" — เก็บเป็นเคสอนาคต'),
+    h('div', { class: 'nb-head' }, res.tone === 'go' ? 'เก็บเข้าสมุด + ตั้งเตือนตามงาน' : 'ยัง "ไม่ใช่ตอนนี้" — เก็บเป็นเคสอนาคต'),
+    healthPending ? h('div', { class: 'auth-fine' }, 'H = ต้องจัดการก่อน — ตั้งเตือนตามวันที่คาดว่าจบการรักษา') : null,
     h('div', { style: 'display:flex;gap:8px;flex-wrap:wrap;margin:10px 0' }, nameEl, whenEl),
-    btn, msg);
+    whyEl,
+    h('div', { style: 'margin-top:10px' }, btn), msg);
 }
 
 function dimRow(d) {
