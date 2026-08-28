@@ -19,6 +19,31 @@
 - ทดสอบ: build ผ่าน, 27 tests, ไม่มี console error, render followups/manha-nurture/dashboard ผ่าน (mock), toggle/add/＋ตั้งเตือน ทำงาน, มือถือไม่ล้นจอ
 - ✅ push + deploy
 
+## 2026-08-28 — แก้ตามรีวิวของ Win (3 รอบ) — ทุกอย่าง LIVE
+
+**รอบ 1 — นโยบายความเป็นส่วนตัว + ปิดวงจร สมุดลูกค้า⇄Protection Gap** (commit 05a5fff, migration 0006):
+- `renderPrivacy` "ข้อมูลที่เก็บ" ครอบคลุมสมุดลูกค้า/กรมธรรม์/รายการติดตาม + ระบุ `policies.exclusions` และสถานะสุขภาพ MANHA เป็นข้อมูลอ่อนไหว ม.26 · `POLICY_VERSION` → 2569-08-28
+- migration 0006: `policies` +10 คอลัมน์ (`policy_no`, `parent_policy_id` สำหรับ rider, `health_room_daily`/`health_annual`/`has_copay`, `ci_sum`, `payment_method`, `start_date`, `paid_to_year`, `beneficiary`) · `clients` +`referred_by`/`orphan`
+- `policyForm` แยกฟิลด์ตามชนิด (สุขภาพ = ค่าห้อง/เหมาจ่าย/copay · CI = ทุน CI) + สัญญาเพิ่มเติมซ้อนใต้สัญญาหลัก
+- `coverageFromPolicies()` รวมความคุ้มครอง active → ค่าฟอร์ม · ปุ่ม "วิเคราะห์ Protection Gap" ในหน้าลูกค้า prefill ความคุ้มครองที่มีให้ครบ
+
+**รอบ 2 — บันทึกการติดต่อ + หน้างานติดตามแบบเช้าวันจันทร์** (commit 9e5e959, migration 0007):
+- migration 0007: `public.interactions` (channel/outcome/occurred_on, RLS per-agent)
+- ติ๊กปิดงานที่ผูกลูกค้า → ฟอร์ม "ผลเป็นยังไง" inline → log interaction + ตั้งเตือนครั้งถัดไป (หรือ "แค่ปิดงาน") · หน้าลูกค้ามี timeline "ประวัติการติดต่อ"
+- งานติดตามแยก bucket: เลยกำหนด / วันนี้–7วัน / ต่อไป (พับ) / ปิดงานแล้ว (พับ) · ปุ่มเลื่อน +7 วัน · ปุ่มโทร/LINE บนแถว
+- "＋ ตั้งเตือน" dedupe กับ reminder ที่มีอยู่ (kind+client) · วันเกิดใช้วันที่ปีนี้ (29 ก.พ.→28) ไม่ขึ้น overdue · resale ครบกำหนด +14 วัน
+- renewal row มีปุ่ม "ชำระแล้ว" → `markPremiumPaid` เลื่อน renewal_date ตามงวด (single → เคลียร์)
+
+**รอบ 3 — ความแม่นของธง resale + MANHA nurture + ตัวกรองสมุด** (commit 0171054, ไม่มี migration):
+- `summary.gapDetail` (need/have/gap ต่อหมวด) เพิ่มใน `analyze()`
+- `GAP_COVER` เอา `group` ออก (สวัสดิการหายเมื่อออกจากงาน) · unit-linked ไม่นับเป็นเกษียณ/การศึกษา
+- `resaleOpportunities()` คืน 4 สัญญาณแยก: gaps (ไม่มีส่วนตัว) · groupOnly (มีแต่กลุ่ม) · underinsured (มี < 60% ของ need) · stale (ผล > ~13 เดือน → ทบทวนประจำปี)
+- MANHA nurture box แสดงทุก readout รวม "go" · บังคับกรอก "จะกลับไปคุยเรื่องอะไร" · ช่วงเวลาแนะนำตามเหตุผล
+- สมุดลูกค้า: ชิปกรอง ลูกค้า/ผู้มุ่งหวัง + เรียงตามชื่อ/อัปเดตล่าสุด
+
+migration 0006 + 0007 รันแล้ว (Claude รันผ่าน Chrome · verified: policies 25 cols, clients 18, interactions 7). ทั้ง 3 รอบ push + deploy แล้ว
+**ยังไม่ทำจากรีวิว Win:** แทน prompt()/confirm() ด้วยฟอร์มในหน้า · MANHA prospect แยก opt-in ข้อมูลสุขภาพ · "ลบลูกค้า" default ลบผลวิเคราะห์ด้วย · แยกทุพพลภาพจาก PA ใน engine · ปิดธง resale · แดชบอร์ดหัวหน้าทีม + house assumptions + นโยบาย "ตัวแทนออกจากทีม" (เฟส Team) · ทนายตรวจ Terms/Privacy
+
 ## 2026-08-28 — Module B core เริ่ม: สมุดลูกค้า (client book)
 
 - **Migration `supabase/0004_client_book.sql` — user ต้องรันใน SQL Editor** (setup.sql อัปเดตแล้วด้วย)
