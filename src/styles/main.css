@@ -790,6 +790,42 @@ ul.tax-note li { margin: 0; }
 .land-price .land-sub b { color: var(--ap-ink); }
 
 /* ============================================================================
+   สมุดลูกค้า (Module B)
+   ========================================================================== */
+
+.back-link { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--ap-ink2); text-decoration: none; margin-bottom: 12px; }
+.back-link:hover { color: var(--ap-ink); }
+
+.field-grid.two { grid-template-columns: 1fr 1fr; align-items: start; }
+
+.dash-row.client-row { grid-template-columns: 1fr 68px 200px 40px; }
+
+.renew-card { gap: 0; margin-bottom: 16px; }
+.renew-line { display: grid; grid-template-columns: 1.1fr 1.3fr 1fr; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--ap-line); }
+.renew-line:last-child { border-bottom: none; }
+.renew-line .rl-name { font-size: 13px; font-weight: 500; }
+.renew-over { color: var(--ap-bad); font-weight: 500; }
+.renew-soon { color: var(--ap-warn); font-weight: 500; }
+
+.client-cols { display: grid; grid-template-columns: 1fr 300px; gap: 22px; align-items: start; }
+.client-side { display: flex; flex-direction: column; gap: 14px; }
+.sec-h { font-size: 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.sec-h .btn { margin-left: auto; }
+
+.pol-list { display: flex; flex-direction: column; gap: 10px; }
+.pol-card { border: 1px solid var(--ap-line); border-radius: 10px; padding: 13px 15px; background: var(--ap-card); }
+.pol-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pol-title { font-size: 13.5px; font-weight: 600; }
+.pol-meta { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--ap-ink2); margin-top: 7px; }
+.pol-excl { font-size: 12px; color: var(--ap-ink); margin-top: 7px; padding: 6px 9px; background: var(--ap-warn-s); border-radius: 6px; line-height: 1.5; }
+.pol-note { font-size: 12px; margin-top: 6px; line-height: 1.5; }
+.pol-form { display: flex; flex-direction: column; gap: 6px; }
+
+.link-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--ap-line); }
+.link-row:last-of-type { border-bottom: none; }
+.link-row .lr-name { flex: 1; font-size: 12.5px; }
+
+/* ============================================================================
    Responsive
    ========================================================================== */
 
@@ -799,7 +835,12 @@ ul.tax-note li { margin: 0; }
   .cat-grid, .rec-tax, .landing-hero, .cols-3, .cols-2, .pyr-body { grid-template-columns: 1fr; }
   .result-head { flex-direction: column; gap: 14px; }
   .sev-row { grid-template-columns: 130px 1fr 28px; gap: 10px; }
-  .field-grid { grid-template-columns: 1fr; }
+  .field-grid, .field-grid.two { grid-template-columns: 1fr; }
+  .client-cols { grid-template-columns: 1fr; }
+  .dash-row.client-row { grid-template-columns: 1fr 70px 44px; }
+  .dash-row.client-row .r:nth-child(3) { display: none; }
+  .renew-line { grid-template-columns: 1fr auto; }
+  .renew-line .muted:nth-child(2) { display: none; }
   .auth-card { grid-template-columns: 1fr; }
   .auth-aside { display: none; }
   .auth-main { padding: 30px 22px; }

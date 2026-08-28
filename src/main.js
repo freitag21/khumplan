@@ -7,11 +7,14 @@ import { renderResults } from './ui/results.js';
 import { renderManha } from './ui/manha.js';
 import { renderAuth, renderLanding, renderSupport, renderGuide, renderContact, renderTerms, renderPrivacy } from './ui/pages.js';
 import { renderDashboard } from './ui/dashboard.js';
+import { renderClientList, renderClientDetail } from './ui/clients.js';
 import { hasSupabase } from './supabase.js';
 import { getAgentProfile, signUp, signIn, sendPasswordReset, updatePassword, signOut, onAuthChange } from './auth.js';
 import {
   saveAnalysis, updateAnalysis, deleteAnalysis, loadMyAnalysis, loadAnalysisBySlug,
   listMyAnalyses, updateAgentProfile, monthStats, deleteMyAccount,
+  listClients, getClient, createClient, updateClient, deleteClient,
+  addPolicy, updatePolicy, deletePolicy, linkAnalysis, listUnlinkedAnalyses, upcomingRenewals,
 } from './store.js';
 
 const root = document.getElementById('app');
@@ -45,6 +48,8 @@ function route() {
   if (view === 'landing') return showLanding();
   if (view === 'auth') return showAuth(p.get('m') || 'signin');
   if (view === 'dashboard') return showDashboard();
+  if (view === 'clients') return showClients();
+  if (view === 'client') return showClient(p.get('id'));
   if (view === 'support') return mount(renderSupport({ onBack: () => nav('?') }), { bare: true });
   if (view === 'guide') return mount(renderGuide({ onBack: () => nav('?'), onStart: () => nav('?view=quick') }));
   if (view === 'contact') return mount(renderContact({ onBack: () => nav('?'), onSupport: SUPPORT.enabled ? () => nav('?view=support') : null }));
@@ -88,6 +93,7 @@ function mount(node, { bare = false, client = false } = {}) {
 function topbar() {
   const right = [];
   if (hasSupabase && agent?.id) {
+    right.push(h('a', { class: 'topbar-link', href: '?view=clients', onclick: (e) => { e.preventDefault(); nav('?view=clients'); } }, 'สมุดลูกค้า'));
     right.push(h('a', { class: 'topbar-link', href: '?view=dashboard', onclick: (e) => { e.preventDefault(); nav('?view=dashboard'); } }, 'แดชบอร์ด'));
     right.push(h('span', { class: 'topbar-user' }, agent.display_name || agent.email));
     right.push(h('button', { class: 'btn btn-secondary', style: 'padding:5px 11px;font-size:12.5px', onclick: async () => { await signOut(); } }, 'ออกจากระบบ'));
@@ -153,11 +159,88 @@ async function showDashboard() {
     onDelete: (id) => deleteAnalysis(id),
     onSaveProfile: async (fields) => { agent = await updateAgentProfile(fields); },
     onSupport: () => nav('?view=support'),
+    onClients: () => nav('?view=clients'),
     onDeleteAccount: async () => { await deleteMyAccount(); await signOut(); alert('ปิดบัญชีเรียบร้อยแล้ว'); },
   });
   root.innerHTML = '';
   root.append(topbar(), h('div', { class: 'page' }, node), footer());
   window.scrollTo({ top: 0 });
+}
+
+/* ---------- สมุดลูกค้า (Module B) ---------- */
+
+function needsAgent() {
+  if (!hasSupabase) { mount(h('div', { class: 'card ap-g elev-sm', style: 'max-width:480px;margin:40px auto' },
+    h('h2', { style: 'font-size:17px' }, 'ต้องเชื่อมต่อ Supabase'),
+    h('p', { class: 'muted', style: 'font-size:13px' }, 'โหมดออฟไลน์ใช้สมุดลูกค้าไม่ได้'))); return false; }
+  if (!agent?.id) { nav('?view=auth'); return false; }
+  return true;
+}
+
+function loadingShell() {
+  root.innerHTML = '';
+  root.append(topbar(), h('div', { class: 'page' }, h('p', { class: 'muted' }, 'กำลังโหลด…')), footer());
+}
+
+async function showClients() {
+  if (!needsAgent()) return;
+  loadingShell();
+  try {
+    const [clients, renewals] = await Promise.all([listClients(), upcomingRenewals(90)]);
+    const node = renderClientList({
+      clients, renewals,
+      onOpen: (id) => nav(`?view=client&id=${id}`),
+      onNew: () => promptNewClient(),
+      onBack: () => nav('?view=dashboard'),
+    });
+    root.innerHTML = '';
+    root.append(topbar(), h('div', { class: 'page' }, node), footer());
+    window.scrollTo({ top: 0 });
+  } catch (e) {
+    mount(h('p', { class: 'muted' }, 'โหลดไม่สำเร็จ: ' + e.message));
+  }
+}
+
+async function promptNewClient() {
+  const name = prompt('ชื่อ-นามสกุลลูกค้า');
+  if (name == null) return;
+  const full_name = name.trim();
+  if (!full_name) return;
+  const ok = confirm(
+    `เพิ่ม "${full_name}" เข้าสมุดลูกค้า\n\n` +
+    'กด "ตกลง" เพื่อยืนยันว่าได้แจ้งวัตถุประสงค์และได้รับความยินยอมจากลูกค้าในการเก็บข้อมูลแล้ว (PDPA)');
+  if (!ok) return;
+  try {
+    const { id } = await createClient({ full_name }, { consent: true });
+    nav(`?view=client&id=${id}`);
+  } catch (e) { alert('เพิ่มลูกค้าไม่สำเร็จ: ' + e.message); }
+}
+
+async function showClient(id) {
+  if (!needsAgent()) return;
+  if (!id) return nav('?view=clients');
+  loadingShell();
+  try {
+    const [data, unlinked] = await Promise.all([getClient(id), listUnlinkedAnalyses()]);
+    if (!data) return mount(h('p', { class: 'muted' }, 'ไม่พบลูกค้าคนนี้'));
+    const node = renderClientDetail({
+      data, unlinked,
+      onBack: () => nav('?view=clients'),
+      onSaveClient: (fields) => updateClient(id, fields),
+      onDeleteClient: async () => { await deleteClient(id); nav('?view=clients'); },
+      onAddPolicy: (fields) => addPolicy(id, fields),
+      onUpdatePolicy: (pid, fields) => updatePolicy(pid, fields),
+      onDeletePolicy: (pid) => deletePolicy(pid),
+      onLinkAnalysis: (aid, cid) => linkAnalysis(aid, cid),
+      onOpenAnalysis: (aid) => nav(`?edit=${aid}`),
+      onNewAnalysis: () => nav('?'),
+    });
+    root.innerHTML = '';
+    root.append(topbar(), h('div', { class: 'page' }, node), footer());
+    window.scrollTo({ top: 0 });
+  } catch (e) {
+    mount(h('p', { class: 'muted' }, 'โหลดไม่สำเร็จ: ' + e.message));
+  }
 }
 
 /* ---------- quick / form / results ---------- */

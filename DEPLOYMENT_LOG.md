@@ -5,6 +5,20 @@
 
 ---
 
+## 2026-08-28 — Module B core เริ่ม: สมุดลูกค้า (client book)
+
+- **Migration `supabase/0004_client_book.sql` — user ต้องรันใน SQL Editor** (setup.sql อัปเดตแล้วด้วย)
+  - `public.clients` (สมุดลูกค้า, RLS per-agent, PDPA consent columns, updated_at trigger)
+  - `public.policies` (กรมธรรม์ที่ถืออยู่: kind/insurer/plan/sum_assured/premium/freq/renewal_date/status/exclusions, RLS, partial index บน renewal_date)
+  - `analyses.client_id` (nullable FK → clients, on delete set null) — ผูกผลวิเคราะห์เข้าลูกค้า
+  - `public.set_updated_at()` trigger กลาง
+- โค้ด: `src/ui/clients.js` ใหม่ (renderClientList + renderClientDetail), store.js +11 ฟังก์ชัน (listClients/getClient/createClient/updateClient/deleteClient/addPolicy/updatePolicy/deletePolicy/linkAnalysis/listUnlinkedAnalyses/upcomingRenewals), routes `?view=clients` + `?view=client&id=`, topbar link "สมุดลูกค้า", dashboard card ชี้เข้าสมุด
+- หน้าสมุด: รายชื่อ + ค้นหา + การ์ด "กรมธรรม์ใกล้ครบกำหนดชำระ 90 วัน" (ฐานของเตือน LINE) · หน้าลูกค้า: โปรไฟล์ + กรมธรรม์ (เพิ่ม/แก้/ลบ inline) + ผูก/ปลดผูกผลวิเคราะห์
+- เพิ่มลูกค้าใหม่ = prompt ชื่อ + confirm PDPA consent ก่อนบันทึก
+- ทดสอบ: build ผ่าน, 27 tests, ไม่มี console error, render list/detail/inline-forms ผ่าน (mock data), มือถือ 375px คอลัมน์เดียว
+- **ยังไม่ deploy** — รอ user รัน migration 0004 ก่อน push
+- ยังไม่ทำใน Module B: เตือน LINE (ต้องมี bot), ธง resale อัตโนมัติ, nurture list จาก MANHA
+
 ## 2026-08-28 — Landing page (ขายก่อน signup)
 
 - เขียน `renderLanding` ใหม่ตามแผนการตลาด (STRATEGY.md): mini topbar + hero + "ดูของจริง" + ทำงานยังไง (3 ขั้น) + สิ่งที่ได้ (6) + ทำไมไม่ใช้โปรแกรมบริษัท/CRM + ปลอดภัย คปภ./PDPA + แถบหัวหน้าทีม + บรรทัดราคา + FAQ (เพิ่ม "ราคาเท่าไหร่") + CTA ปิด
