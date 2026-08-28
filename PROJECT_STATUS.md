@@ -1,6 +1,6 @@
 # KhumPlan — สถานะโปรเจค
 
-อัปเดต: 2026-08-27 · **สถานะ: เปิดใช้งานจริงแล้ว (LIVE) — https://khumplan.com**
+อัปเดต: 2026-08-28 · **สถานะ: เปิดใช้งานจริงแล้ว (LIVE) — https://khumplan.com** · landing page + สมุดลูกค้า (Module B) ขึ้นแล้ว
 
 ## ตัดสินใจแล้ว
 
@@ -79,10 +79,12 @@
 ## Q ถัดไป — build แค่ 3 อย่าง (ห้ามแตะอย่างอื่น)
 
 1. **Module B core** — สมุดลูกค้า: กรมธรรม์ที่ถืออยู่ + ข้อยกเว้น · เตือนต่ออายุ/วันเกิด เข้า LINE · ธง resale อัตโนมัติจาก Protection Gap · nurture list จาก MANHA
+   - ✅ **สมุดลูกค้า + กรมธรรม์ที่ถืออยู่ + ข้อยกเว้น** (LIVE 2026-08-28, `?view=clients`, migration 0004) + การ์ด "กรมธรรม์ใกล้ครบกำหนดชำระ 90 วัน" + ผูกผลวิเคราะห์เข้าลูกค้า
+   - ⏳ เตือน LINE (ต้องตั้ง LINE Messaging API bot) · ธง resale อัตโนมัติ · nurture list จาก MANHA
 2. **แดชบอร์ดหัวหน้าทีม v1** — รายชื่อที่นั่ง, active ล่าสุด, จำนวนเคส, ยอดรวมทีม — **ข้อมูลรวม/กิจกรรมเท่านั้น ห้ามเห็นชื่อลูกค้าของลูกทีม (PDPA)**
 3. **Team workspace + seat invite + Team trial 30 วัน**
 
-พร้อมกัน: public landing page (ขายก่อน signup — ตอนนี้ root = login), ปุ่ม "เชิญทีม", โน้ต paid-roadmap บน landing/onboarding
+พร้อมกัน: ✅ public landing page (LIVE — root = landing เมื่อยังไม่ล็อกอิน), ปุ่ม "เชิญทีม", โน้ต paid-roadmap บน landing/onboarding
 
 ## ยังไม่ได้ทำ / เปิดไว้ทีหลัง
 
