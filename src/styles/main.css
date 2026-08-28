@@ -834,6 +834,11 @@ ul.tax-note li { margin: 0; }
 .link-row:last-of-type { border-bottom: none; }
 .link-row .lr-name { flex: 1; font-size: 12.5px; }
 
+.log-row { padding: 7px 0; border-bottom: 1px solid var(--ap-line); }
+.log-row:last-child { border-bottom: none; }
+.log-meta { font-size: 11px; }
+.log-body { font-size: 12.5px; line-height: 1.5; margin-top: 2px; }
+
 /* งานติดตาม (follow-ups) */
 .fu-block { margin-bottom: 26px; }
 .fu-list { display: flex; flex-direction: column; }
@@ -859,6 +864,15 @@ ul.tax-note li { margin: 0; }
 .fu-side { flex: none; display: flex; align-items: center; gap: 4px; }
 .fu-add { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--ap-line); }
 .fu-add-grid { display: grid; grid-template-columns: 1fr 160px; gap: 10px; }
+.fu-subhead { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin: 14px 0 2px; }
+.fu-subhead:first-child { margin-top: 4px; }
+.fu-subhead .muted { font-weight: 400; }
+.fu-later { margin-top: 10px; }
+.fu-later > summary { font-size: 12px; color: var(--ap-ink2); cursor: pointer; padding: 6px 0; }
+.fu-due { font-size: 11.5px; white-space: nowrap; }
+.fu-ql { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: var(--ap-pri-soft); text-decoration: none; }
+.fu-doneform { margin-top: 8px; padding: 10px; background: var(--ap-fog); border-radius: 8px; }
+.fu-doneform textarea { flex: 1; min-width: 180px; }
 
 /* ============================================================================
    Responsive

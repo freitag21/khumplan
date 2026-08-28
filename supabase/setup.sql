@@ -1,6 +1,6 @@
 -- คุ้มแพลน (KhumPlan) — SQL ตั้งค่าครบในไฟล์เดียว
 -- วางทั้งหมดนี้ใน Supabase Dashboard → SQL Editor → Run
--- (รวม migration 0001 + 0002 + 0003 + 0004 + 0005 + 0006 · รันซ้ำได้ ปลอดภัย)
+-- (รวม migration 0001 + 0002 + 0003 + 0004 + 0005 + 0006 + 0007 · รันซ้ำได้ ปลอดภัย)
 
 -- ═══════════ ตาราง agents (โปรไฟล์ตัวแทน) ═══════════
 create table if not exists public.agents (
@@ -251,3 +251,22 @@ create index if not exists policies_parent_idx on public.policies (parent_policy
 alter table public.clients
   add column if not exists referred_by text,
   add column if not exists orphan      boolean not null default false;
+
+-- ═══════════ 0007 · บันทึกการติดต่อ (contact log) ═══════════
+
+create table if not exists public.interactions (
+  id          uuid primary key default gen_random_uuid(),
+  agent_id    uuid not null references public.agents (id) on delete cascade,
+  client_id   uuid not null references public.clients (id) on delete cascade,
+  channel     text not null default 'call'
+                check (channel in ('call', 'line', 'meet', 'other')),
+  outcome     text not null,
+  occurred_on date not null default current_date,
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists interactions_client_idx on public.interactions (client_id, occurred_on desc);
+alter table public.interactions enable row level security;
+drop policy if exists "interactions owner all" on public.interactions;
+create policy "interactions owner all" on public.interactions
+  for all using (auth.uid() = agent_id) with check (auth.uid() = agent_id);

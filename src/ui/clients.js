@@ -119,6 +119,7 @@ export function renderClientDetail(opts = {}) {
   const { client } = opts.data;
   let policies = [...(opts.data.policies || [])];
   let analyses = [...(opts.data.analyses || [])];
+  let interactions = [...(opts.data.interactions || [])];
   let unlinked = [...(opts.unlinked || [])];
 
   /* ---- โปรไฟล์ลูกค้า ---- */
@@ -365,6 +366,32 @@ export function renderClientDetail(opts = {}) {
   } }, 'แนบ');
   renderAnalyses(); refreshPicker();
 
+  /* ---- ประวัติการติดต่อ ---- */
+  const CHAN_LABEL = { call: 'โทร', line: 'LINE', meet: 'เจอตัว', other: 'อื่น ๆ' };
+  const logWrap = h('div', {});
+  function renderLog() {
+    logWrap.innerHTML = '';
+    if (!interactions.length) { logWrap.append(h('div', { class: 'muted', style: 'font-size:12px;padding:4px 0' }, 'ยังไม่มีบันทึกการติดต่อ')); return; }
+    interactions.slice(0, 12).forEach((it) => logWrap.append(
+      h('div', { class: 'log-row' },
+        h('div', { class: 'log-meta muted' }, `${thDate(it.occurred_on)} · ${CHAN_LABEL[it.channel] || it.channel}`),
+        h('div', { class: 'log-body' }, it.outcome))));
+  }
+  renderLog();
+  const logText = h('input', { class: 'input', placeholder: 'บันทึกผลการติดต่อ' });
+  const logChan = select('call', Object.entries(CHAN_LABEL), { style: 'max-width:110px' });
+  const logMsg = h('div', { class: 'auth-fine' });
+  const logBtn = h('button', { class: 'btn btn-secondary', onclick: async () => {
+    if (!logText.value.trim()) return;
+    logBtn.disabled = true; logMsg.textContent = '';
+    try {
+      const saved = await opts.onAddInteraction?.({ channel: logChan.value, outcome: logText.value.trim() });
+      if (saved) interactions.unshift(saved);
+      logText.value = ''; renderLog();
+    } catch (e) { logMsg.style.color = 'var(--ap-bad)'; logMsg.textContent = e.message; }
+    logBtn.disabled = false;
+  } }, 'บันทึก');
+
   /* ---- ประกอบหน้า ---- */
   return h('div', { class: 'dashboard client-detail' },
     h('a', { class: 'back-link', href: '?view=clients', onclick: (e) => { e.preventDefault(); opts.onBack?.(); } },
@@ -395,7 +422,13 @@ export function renderClientDetail(opts = {}) {
           h('div', { class: 'side-kicker' }, 'ผลวิเคราะห์ Protection Gap'),
           h('hr', { class: 'hr', style: 'margin:9px -17px' }),
           anaWrap,
-          h('div', { style: 'display:flex;gap:6px;margin-top:10px' }, picker, linkBtn)))),
+          h('div', { style: 'display:flex;gap:6px;margin-top:10px' }, picker, linkBtn)),
+        h('div', { class: 'card ap-g elev-sm' },
+          h('div', { class: 'side-kicker' }, 'ประวัติการติดต่อ'),
+          h('hr', { class: 'hr', style: 'margin:9px -17px' }),
+          logWrap,
+          h('div', { style: 'display:flex;gap:6px;margin-top:10px' }, logChan, logText, logBtn),
+          logMsg))),
 
     h('h2', { class: 'sec-h', style: 'margin-top:26px' }, 'ข้อมูลลูกค้า'),
     profileCard);

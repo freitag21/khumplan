@@ -16,7 +16,8 @@ import {
   listMyAnalyses, updateAgentProfile, monthStats, deleteMyAccount,
   listClients, getClient, createClient, setClientStage, updateClient, deleteClient,
   addPolicy, updatePolicy, deletePolicy, linkAnalysis, listUnlinkedAnalyses, upcomingRenewals, coverageFromPolicies,
-  listReminders, createReminder, setReminderDone, deleteReminder, birthdaysThisMonth, resaleOpportunities,
+  listReminders, createReminder, setReminderDone, snoozeReminder, deleteReminder, birthdaysThisMonth, resaleOpportunities,
+  listInteractions, addInteraction, markPremiumPaid,
 } from './store.js';
 
 const root = document.getElementById('app');
@@ -241,6 +242,7 @@ async function showClient(id) {
       onDeletePolicy: (pid) => deletePolicy(pid),
       onSetStage: (stage) => setClientStage(id, stage),
       onLinkAnalysis: (aid, cid) => linkAnalysis(aid, cid),
+      onAddInteraction: (f) => addInteraction({ ...f, client_id: id }),
       onOpenAnalysis: (aid) => nav(`?edit=${aid}`),
       onNewAnalysis: () => showForm({ ...prefillFromClient(data.client), ...coverageFromPolicies(data.policies) }, null, id),
     });
@@ -276,7 +278,10 @@ async function showFollowups() {
       onOpenClient: (id) => nav(`?view=client&id=${id}`),
       onAddReminder: (f) => createReminder(f),
       onToggleDone: (rid, done) => setReminderDone(rid, done),
+      onSnooze: (rid, days) => snoozeReminder(rid, days),
       onDeleteReminder: (rid) => deleteReminder(rid),
+      onLogOutcome: (f) => addInteraction(f),
+      onMarkPaid: (pid) => markPremiumPaid(pid),
     });
     root.innerHTML = '';
     root.append(topbar(), h('div', { class: 'page' }, node), footer());

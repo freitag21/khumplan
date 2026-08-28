@@ -210,11 +210,12 @@ export async function getClient(id) {
     .maybeSingle();
   if (error) throw error;
   if (!client) return null;
-  const [{ data: policies }, { data: analyses }] = await Promise.all([
+  const [{ data: policies }, { data: analyses }, { data: interactions }] = await Promise.all([
     supabase.from('policies').select('*').eq('client_id', id).order('created_at'),
     supabase.from('analyses').select('id, client_name, created_at, summary').eq('client_id', id).order('created_at', { ascending: false }),
+    supabase.from('interactions').select('id, channel, outcome, occurred_on').eq('client_id', id).order('occurred_on', { ascending: false }).order('created_at', { ascending: false }),
   ]);
-  return { client, policies: policies ?? [], analyses: analyses ?? [] };
+  return { client, policies: policies ?? [], analyses: analyses ?? [], interactions: interactions ?? [] };
 }
 
 /** สร้างลูกค้าใหม่ — ต้องยืนยันความยินยอม (PDPA) ก่อน · stage: 'customer' | 'prospect' */
@@ -336,13 +337,19 @@ export async function listReminders({ includeDone = false } = {}) {
   if (!user) return [];
   let q = supabase
     .from('reminders')
-    .select('id, client_id, kind, title, detail, due_date, done, done_at, clients(full_name)')
+    .select('id, client_id, kind, title, detail, due_date, done, done_at, clients(full_name, phone, line_id)')
     .eq('agent_id', user.id)
     .order('due_date');
   if (!includeDone) q = q.eq('done', false);
   const { data, error } = await q;
   if (error) throw error;
-  return (data ?? []).map((r) => ({ ...r, client_name: r.clients?.full_name || null, clients: undefined }));
+  return (data ?? []).map((r) => ({
+    ...r,
+    client_name: r.clients?.full_name || null,
+    client_phone: r.clients?.phone || null,
+    client_line: r.clients?.line_id || null,
+    clients: undefined,
+  }));
 }
 
 export async function createReminder(fields) {
@@ -365,10 +372,73 @@ export async function setReminderDone(id, done) {
   if (error) throw error;
 }
 
+/** เลื่อนวันครบกำหนดของรายการติดตาม ไป N วัน */
+export async function snoozeReminder(id, days) {
+  if (!hasSupabase) throw new Error('ยังไม่ได้ตั้งค่า Supabase');
+  const d = new Date();
+  d.setDate(d.getDate() + Number(days || 7));
+  const { error } = await supabase.from('reminders')
+    .update({ due_date: d.toISOString().slice(0, 10), done: false, done_at: null })
+    .eq('id', id);
+  if (error) throw error;
+  return d.toISOString().slice(0, 10);
+}
+
 export async function deleteReminder(id) {
   if (!hasSupabase) throw new Error('ยังไม่ได้ตั้งค่า Supabase');
   const { error } = await supabase.from('reminders').delete().eq('id', id);
   if (error) throw error;
+}
+
+/* ═══════════════ บันทึกการติดต่อ (contact log) ═══════════════ */
+
+export async function listInteractions(clientId) {
+  if (!hasSupabase) return [];
+  const { data, error } = await supabase
+    .from('interactions')
+    .select('id, channel, outcome, occurred_on, created_at')
+    .eq('client_id', clientId)
+    .order('occurred_on', { ascending: false })
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function addInteraction({ client_id, channel = 'call', outcome, occurred_on }) {
+  if (!hasSupabase) throw new Error('ยังไม่ได้ตั้งค่า Supabase');
+  const user = await getUser();
+  if (!user) throw new Error('กรุณาเข้าสู่ระบบ');
+  if (!outcome || !outcome.trim()) throw new Error('กรุณาบันทึกผลการติดต่อ');
+  const row = {
+    agent_id: user.id, client_id, channel,
+    outcome: outcome.trim(),
+    occurred_on: occurred_on || new Date().toISOString().slice(0, 10),
+  };
+  const { data, error } = await supabase.from('interactions').insert(row).select('*').single();
+  if (error) throw error;
+  return data;
+}
+
+const FREQ_MONTHS = { year: 12, half: 6, quarter: 3, month: 1 };
+
+/** "ชำระเบี้ยแล้ว" — เลื่อน renewal_date ไปงวดถัดไปตาม premium_freq */
+export async function markPremiumPaid(policyId) {
+  if (!hasSupabase) throw new Error('ยังไม่ได้ตั้งค่า Supabase');
+  const { data: p, error: e1 } = await supabase
+    .from('policies').select('renewal_date, premium_freq').eq('id', policyId).single();
+  if (e1) throw e1;
+  let next = null;
+  if (p.premium_freq === 'single') {
+    next = null; // ชำระครั้งเดียว — ไม่มีงวดถัดไป
+  } else {
+    const base = p.renewal_date ? new Date(p.renewal_date + 'T00:00:00') : new Date();
+    const months = FREQ_MONTHS[p.premium_freq] || 12;
+    base.setMonth(base.getMonth() + months);
+    next = base.toISOString().slice(0, 10);
+  }
+  const { error } = await supabase.from('policies').update({ renewal_date: next }).eq('id', policyId);
+  if (error) throw error;
+  return next;
 }
 
 /** ลูกค้าที่วันเกิดอยู่ในเดือนนี้ */
