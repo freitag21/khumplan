@@ -1,5 +1,5 @@
 import { supabase, hasSupabase } from './supabase.js';
-import { getUser } from './auth.js';
+import { getUser, POLICY_VERSION } from './auth.js';
 
 function rowFromInput(needsInput, summary) {
   return {
@@ -29,7 +29,13 @@ export async function saveAnalysis(needsInput, summary, { consent = false } = {}
   const user = await getUser();
   if (!user) throw new Error('กรุณาเข้าสู่ระบบก่อนบันทึก');
 
-  const row = { agent_id: user.id, consent_confirmed: true, ...rowFromInput(needsInput, summary) };
+  const row = {
+    agent_id: user.id,
+    consent_confirmed: true,
+    consent_version: POLICY_VERSION,
+    consent_at: new Date().toISOString(),
+    ...rowFromInput(needsInput, summary),
+  };
   for (let attempt = 0; attempt < 3; attempt++) {
     const { data, error } = await supabase
       .from('analyses')
@@ -53,6 +59,13 @@ export async function updateAnalysis(id, needsInput, summary) {
     .single();
   if (error) throw error;
   return data;
+}
+
+/** เปิด/ปิดลิงก์แชร์ของผลวิเคราะห์ (สิทธิระงับการใช้ตาม PDPA ม.34) */
+export async function setShareEnabled(id, enabled) {
+  if (!hasSupabase) throw new Error('ยังไม่ได้ตั้งค่า Supabase');
+  const { error } = await supabase.from('analyses').update({ share_enabled: !!enabled }).eq('id', id);
+  if (error) throw error;
 }
 
 /** ลบผลวิเคราะห์ */
@@ -99,7 +112,7 @@ export async function listMyAnalyses() {
   if (!user) return [];
   const { data } = await supabase
     .from('analyses')
-    .select('id, slug, client_name, client_age, marital_status, created_at, summary')
+    .select('id, slug, client_name, client_age, marital_status, created_at, summary, share_enabled, expires_at')
     .eq('agent_id', user.id)
     .order('created_at', { ascending: false });
   return data ?? [];
@@ -219,24 +232,62 @@ export async function getClient(id) {
   return { client, policies: policies ?? [], analyses: analyses ?? [], interactions: interactions ?? [] };
 }
 
-/** สร้างลูกค้าใหม่ — ต้องยืนยันความยินยอม (PDPA) ก่อน · stage: 'customer' | 'prospect' */
-export async function createClient(fields, { consent = false, stage = 'customer', consentVersion = null } = {}) {
+/**
+ * สร้างลูกค้าใหม่ — ต้องยืนยันความยินยอม (PDPA) ก่อน
+ * consentSensitive = ลูกค้าให้ความยินยอมโดยชัดแจ้งสำหรับข้อมูลสุขภาพ (ม.26) แยกต่างหาก
+ */
+export async function createClient(fields, { consent = false, consentSensitive = false, stage = 'customer', consentVersion = null } = {}) {
   if (!hasSupabase) throw new Error('ยังไม่ได้ตั้งค่า Supabase');
   if (!consent) throw new Error('กรุณายืนยันว่าได้รับความยินยอมจากลูกค้าก่อนบันทึกเข้าสมุด');
   const user = await getUser();
   if (!user) throw new Error('กรุณาเข้าสู่ระบบ');
+  const now = new Date().toISOString();
   const row = {
     agent_id: user.id,
     ...pick(CLIENT_FIELDS, fields),
     stage: stage === 'prospect' ? 'prospect' : 'customer',
     pdpa_consent: true,
-    pdpa_consent_at: new Date().toISOString(),
+    pdpa_consent_at: now,
     consent_version: consentVersion,
+    sensitive_consent: !!consentSensitive,
+    sensitive_consent_at: consentSensitive ? now : null,
   };
   if (!row.full_name) throw new Error('กรุณากรอกชื่อลูกค้า');
   const { data, error } = await supabase.from('clients').insert(row).select('id').single();
   if (error) throw error;
   return data;
+}
+
+/**
+ * บันทึกว่าตัวแทนยอมรับข้อกำหนด/นโยบายเวอร์ชันปัจจุบัน (ตาราง append-only)
+ * ข้ามถ้าเวอร์ชันล่าสุดที่ยอมรับตรงกับปัจจุบันแล้ว
+ */
+export async function recordPolicyAcceptance(version = POLICY_VERSION) {
+  if (!hasSupabase) return;
+  const user = await getUser();
+  if (!user) return;
+  const { data: last } = await supabase
+    .from('policy_acceptances')
+    .select('version')
+    .eq('agent_id', user.id)
+    .order('accepted_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (last?.version === version) return;
+  await supabase.from('policy_acceptances').insert({
+    agent_id: user.id,
+    version,
+    user_agent: (typeof navigator !== 'undefined' && navigator.userAgent) || null,
+  });
+}
+
+/** บันทึกความยินยอมโดยชัดแจ้งสำหรับข้อมูลสุขภาพของลูกค้า (ม.26) — ตั้งแล้ว trigger freeze ไว้ */
+export async function setSensitiveConsent(id) {
+  if (!hasSupabase) throw new Error('ยังไม่ได้ตั้งค่า Supabase');
+  const { error } = await supabase.from('clients')
+    .update({ sensitive_consent: true, sensitive_consent_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
 }
 
 /** เปลี่ยนสถานะผู้มุ่งหวัง → ลูกค้า */

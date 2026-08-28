@@ -38,6 +38,16 @@ export function renderDashboard(opts = {}) {
           h('span', { class: 'n' }, Number.isFinite(score) ? score : '-')),
         h('span', { class: 'r muted date' }, a.created_at ? thDate(a.created_at) : '-'),
         h('div', { class: 'dr-actions' },
+          h('button', {
+            class: 'icon-btn', title: a.share_enabled === false ? 'ลิงก์แชร์ปิดอยู่ — กดเพื่อเปิด' : 'กดเพื่อปิดลิงก์แชร์',
+            onclick: async () => {
+              const next = a.share_enabled === false;
+              if (!next && !confirm('ปิดลิงก์แชร์ของผลวิเคราะห์นี้?\nลูกค้าจะเปิดลิงก์เดิมไม่ได้อีก (เปิดใหม่ได้ภายหลัง)')) return;
+              try { await opts.onToggleShare?.(a.id, next); a.share_enabled = next; renderRows(); }
+              catch (e) { alert('ไม่สำเร็จ: ' + e.message); }
+            },
+          }, icon('M6.5 9.5a3 3 0 004.2 0l2-2a3 3 0 10-4.2-4.2M9.5 6.5a3 3 0 00-4.2 0l-2 2a3 3 0 104.2 4.2',
+            { size: 13, stroke: a.share_enabled === false ? 'var(--ap-line)' : 'var(--ap-pri-ink)' })),
           h('button', { class: 'icon-btn', title: 'เปิด', onclick: () => opts.onOpen?.(a.id) }, icon(ICONS.chevron, { size: 14, stroke: 'var(--ap-ink2)' })),
           h('button', { class: 'icon-btn', title: 'ลบ', onclick: async () => {
             if (!confirm(`ลบผลวิเคราะห์ของ "${a.client_name || 'ลูกค้า'}"?\nการลบเป็นการถาวร`)) return;

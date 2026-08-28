@@ -5,16 +5,16 @@ import { h, brand, BRAND, themeToggle, SUPPORT } from './ui/dom.js';
 import { buildForm } from './ui/form.js';
 import { renderResults } from './ui/results.js';
 import { renderManha } from './ui/manha.js';
-import { renderAuth, renderLanding, renderSupport, renderGuide, renderContact, renderTerms, renderPrivacy } from './ui/pages.js';
+import { renderAuth, renderLanding, renderSupport, renderGuide, renderContact, renderTerms, renderPrivacy, renderDpa } from './ui/pages.js';
 import { renderDashboard } from './ui/dashboard.js';
 import { renderClientList, renderClientDetail, renderNewClient } from './ui/clients.js';
 import { renderFollowups } from './ui/followups.js';
 import { hasSupabase } from './supabase.js';
 import { getAgentProfile, signUp, signIn, sendPasswordReset, updatePassword, signOut, onAuthChange, POLICY_VERSION } from './auth.js';
 import {
-  saveAnalysis, updateAnalysis, deleteAnalysis, loadMyAnalysis, loadAnalysisBySlug,
-  listMyAnalyses, updateAgentProfile, monthStats, deleteMyAccount,
-  listClients, getClient, createClient, setClientStage, updateClient, deleteClient,
+  saveAnalysis, updateAnalysis, deleteAnalysis, setShareEnabled, loadMyAnalysis, loadAnalysisBySlug,
+  listMyAnalyses, updateAgentProfile, monthStats, deleteMyAccount, recordPolicyAcceptance,
+  listClients, getClient, createClient, setClientStage, setSensitiveConsent, updateClient, deleteClient,
   addPolicy, updatePolicy, deletePolicy, linkAnalysis, listUnlinkedAnalyses, upcomingRenewals, coverageFromPolicies,
   listReminders, createReminder, setReminderDone, snoozeReminder, deleteReminder, dismissResale,
   birthdaysThisMonth, resaleOpportunities, staleProspects,
@@ -32,7 +32,10 @@ async function init() {
     onAuthChange(async (user, event) => {
       if (event === 'PASSWORD_RECOVERY') { recovering = true; return nav('?view=auth&m=recover'); }
       agent = user ? await getAgentProfile() : null;
-      if (event === 'SIGNED_IN' && !recovering) return nav('?view=dashboard');
+      if (event === 'SIGNED_IN' && !recovering) {
+        recordPolicyAcceptance().catch(() => {}); // บันทึกการยอมรับข้อกำหนดเวอร์ชันปัจจุบัน (append-only)
+        return nav('?view=dashboard');
+      }
       if (event === 'SIGNED_OUT') return nav('?');
       route();
     });
@@ -61,6 +64,7 @@ function route() {
   if (view === 'contact') return mount(renderContact({ onBack: () => nav('?'), onSupport: SUPPORT.enabled ? () => nav('?view=support') : null }));
   if (view === 'terms') return mount(renderTerms({ onBack: () => nav('?') }));
   if (view === 'privacy') return mount(renderPrivacy({ onBack: () => nav('?') }));
+  if (view === 'dpa') return mount(renderDpa({ onBack: () => nav('?') }));
   if (view === 'quick') return showQuick();
   // หน้าแรก: ยังไม่ล็อกอิน → หน้า landing (ขายก่อน signup) · ล็อกอินแล้ว → เริ่มวิเคราะห์เลย
   if (hasSupabase && !agent?.id) return showLanding();
@@ -129,6 +133,7 @@ const footer = () => h('div', { class: 'footer ap-noprint' },
     footerLink('ติดต่อเรา', '?view=contact'),
     footerLink('ข้อกำหนดการใช้งาน', '?view=terms'),
     footerLink('นโยบายความเป็นส่วนตัว', '?view=privacy'),
+    footerLink('ข้อตกลง DPA', '?view=dpa'),
     SUPPORT.enabled
       ? h('a', { class: 'footer-support', href: '?view=support', onclick: (e) => { e.preventDefault(); nav('?view=support'); } }, '☕ สนับสนุนโปรเจค')
       : null));
@@ -167,6 +172,7 @@ async function showDashboard() {
     onNew: () => nav('?'),
     onOpen: (id) => nav(`?edit=${id}`),
     onDelete: (id) => deleteAnalysis(id),
+    onToggleShare: (id, enabled) => setShareEnabled(id, enabled),
     onSaveProfile: async (fields) => { agent = await updateAgentProfile(fields); },
     onSupport: () => nav('?view=support'),
     onClients: () => nav('?view=clients'),
@@ -241,6 +247,7 @@ async function showClient(id) {
       onUpdatePolicy: (pid, fields) => updatePolicy(pid, fields),
       onDeletePolicy: (pid) => deletePolicy(pid),
       onSetStage: (stage) => setClientStage(id, stage),
+      onGrantSensitive: () => setSensitiveConsent(id),
       onLinkAnalysis: (aid, cid) => linkAnalysis(aid, cid),
       onAddInteraction: (f) => addInteraction({ ...f, client_id: id }),
       onOpenAnalysis: (aid) => nav(`?edit=${aid}`),

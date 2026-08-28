@@ -837,6 +837,14 @@ ul.tax-note li { margin: 0; }
 .del-panel { border: 1px solid var(--ap-bad); background: var(--ap-bad-s); border-radius: 10px; padding: 14px 16px; margin-bottom: 18px; }
 .del-panel[hidden] { display: none; }
 
+.sens-banner {
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  border: 1px solid var(--ap-warn); background: var(--ap-warn-s);
+  border-radius: 10px; padding: 12px 15px; margin-bottom: 18px;
+  font-size: 12px; line-height: 1.55; color: var(--ap-ink);
+}
+.sens-banner span { flex: 1; min-width: 220px; }
+
 .fu-chips { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
 .fu-chip {
   font-size: 12px; padding: 4px 12px; border-radius: 999px; cursor: pointer;

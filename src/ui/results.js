@@ -165,7 +165,8 @@ export function renderResults(result, opts = {}) {
   wrap.append(h('div', { class: 'disclaimer' }, infoCircle(),
     h('div', {},
       meta.disclaimer,
-      agent ? h('div', { style: 'margin-top:4px' }, `จัดทำโดย ${agent.display_name}${agent.license_no ? ` · ใบอนุญาตเลขที่ ${agent.license_no}` : ''} · เอกสารนี้ไม่ใช่ส่วนหนึ่งของสัญญาประกันภัย`) : null,
+      h('div', { style: 'margin-top:4px' }, 'เอกสารนี้จัดทำโดยตัวแทนผู้ระบุนามเพื่อประกอบการวางแผนความคุ้มครองส่วนบุคคล มิใช่เอกสารของบริษัทประกันภัยใด มิใช่เอกสารประกอบการเสนอขายผลิตภัณฑ์ และมิใช่ส่วนหนึ่งของสัญญาประกันภัย · อัตราผลตอบแทนที่ใช้เป็นสมมติฐานเชิงวางแผน ไม่ใช่การคาดการณ์ผลตอบแทนของผลิตภัณฑ์การลงทุนใด'),
+      agent ? h('div', { style: 'margin-top:4px' }, `จัดทำโดย ${agent.display_name}${agent.license_no ? ` · ใบอนุญาตเลขที่ ${agent.license_no}` : ''}`) : null,
       assumptionsLine(input, meta))));
 
   return wrap;

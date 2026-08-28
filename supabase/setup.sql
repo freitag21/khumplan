@@ -1,6 +1,6 @@
 -- คุ้มแพลน (KhumPlan) — SQL ตั้งค่าครบในไฟล์เดียว
 -- วางทั้งหมดนี้ใน Supabase Dashboard → SQL Editor → Run
--- (รวม migration 0001 + 0002 + 0003 + 0004 + 0005 + 0006 + 0007 + 0008 + 0009 · รันซ้ำได้ ปลอดภัย)
+-- (รวม migration 0001 + 0002 + 0003 + 0004 + 0005 + 0006 + 0007 + 0008 + 0009 + 0010 · รันซ้ำได้ ปลอดภัย)
 
 -- ═══════════ ตาราง agents (โปรไฟล์ตัวแทน) ═══════════
 create table if not exists public.agents (
@@ -282,3 +282,48 @@ alter table public.policies drop constraint if exists policies_kind_check;
 alter table public.policies
   add constraint policies_kind_check
   check (kind in ('life','health','ci','pa','disability','annuity','savings','unitlinked','group','other'));
+
+-- ═══════════ 0010 · หลักฐานความยินยอม (append-only + freeze + ม.26 แยก) ═══════════
+
+create table if not exists public.policy_acceptances (
+  id          uuid primary key default gen_random_uuid(),
+  agent_id    uuid not null references public.agents (id) on delete cascade,
+  version     text not null,
+  document    text not null default 'terms+privacy',
+  accepted_at timestamptz not null default now(),
+  user_agent  text
+);
+create index if not exists policy_acceptances_agent_idx on public.policy_acceptances (agent_id, accepted_at desc);
+alter table public.policy_acceptances enable row level security;
+drop policy if exists "acceptances read own"   on public.policy_acceptances;
+drop policy if exists "acceptances insert own" on public.policy_acceptances;
+create policy "acceptances read own"   on public.policy_acceptances for select using (auth.uid() = agent_id);
+create policy "acceptances insert own" on public.policy_acceptances for insert with check (auth.uid() = agent_id);
+
+alter table public.clients
+  add column if not exists sensitive_consent    boolean not null default false,
+  add column if not exists sensitive_consent_at timestamptz;
+
+alter table public.analyses
+  add column if not exists consent_version text,
+  add column if not exists consent_at      timestamptz;
+
+create or replace function public.freeze_client_consent()
+returns trigger language plpgsql as $$
+begin
+  if old.pdpa_consent_at is not null then
+    new.pdpa_consent   := old.pdpa_consent;
+    new.pdpa_consent_at := old.pdpa_consent_at;
+    new.consent_version := old.consent_version;
+  end if;
+  if old.sensitive_consent_at is not null then
+    new.sensitive_consent    := old.sensitive_consent;
+    new.sensitive_consent_at := old.sensitive_consent_at;
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists clients_freeze_consent on public.clients;
+create trigger clients_freeze_consent
+  before update on public.clients
+  for each row execute function public.freeze_client_consent();

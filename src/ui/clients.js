@@ -446,6 +446,14 @@ export function renderClientDetail(opts = {}) {
 
     delPanel,
 
+    client.sensitive_consent ? null : h('div', { class: 'sens-banner' },
+      h('span', {}, 'ลูกค้ารายนี้ยังไม่ได้บันทึกความยินยอมโดยชัดแจ้งสำหรับข้อมูลสุขภาพ (ม.26) — แนะนำให้เว้นช่อง "ข้อยกเว้น/เบี้ยเพิ่ม" และสถานะสุขภาพไว้'),
+      h('button', { class: 'btn btn-secondary', style: 'padding:5px 10px;font-size:12px;white-space:nowrap', onclick: async () => {
+        if (!confirm('ยืนยันว่าได้รับความยินยอมโดยชัดแจ้งจากลูกค้าให้เก็บข้อมูลสุขภาพแล้ว?\nเมื่อบันทึกแล้วจะแก้ไขวันที่ย้อนหลังไม่ได้')) return;
+        try { await opts.onGrantSensitive?.(); client.sensitive_consent = true; location.reload(); }
+        catch (e) { alert('ไม่สำเร็จ: ' + e.message); }
+      } }, 'บันทึกความยินยอมข้อมูลสุขภาพ')),
+
     h('div', { class: 'client-cols' },
       h('div', {},
         h('h2', { class: 'sec-h' }, 'กรมธรรม์ที่ถืออยู่', addPolBtn),
@@ -479,6 +487,7 @@ export function renderNewClient(opts = {}) {
   };
   const stageEl = select('customer', [['customer', 'ลูกค้า'], ['prospect', 'ผู้มุ่งหวัง']]);
   const consentEl = h('input', { type: 'checkbox' });
+  const sensEl = h('input', { type: 'checkbox' });
   const msg = h('div', { class: 'auth-fine' });
   const submit = h('button', { class: 'btn btn-primary ap-fill', style: 'justify-content:center',
     onclick: async () => {
@@ -489,7 +498,7 @@ export function renderNewClient(opts = {}) {
         await opts.onCreate?.({
           full_name: f.full_name.value.trim(), nickname: f.nickname.value.trim(),
           phone: f.phone.value.trim(), line_id: f.line_id.value.trim(),
-        }, { consent: true, stage: stageEl.value, consentVersion: POLICY_VERSION });
+        }, { consent: true, consentSensitive: sensEl.checked, stage: stageEl.value, consentVersion: POLICY_VERSION });
       } catch (e) { msg.style.color = 'var(--ap-bad)'; msg.textContent = 'เพิ่มไม่สำเร็จ: ' + e.message; submit.disabled = false; }
     } }, 'เพิ่มเข้าสมุด');
 
@@ -501,9 +510,12 @@ export function renderNewClient(opts = {}) {
       field('ชื่อ-นามสกุล', f.full_name),
       h('div', { class: 'field-grid two' }, field('ชื่อเล่น', f.nickname), field('สถานะ', stageEl)),
       h('div', { class: 'field-grid two' }, field('เบอร์โทร', f.phone), field('LINE ID', f.line_id)),
-      h('label', { class: 'auth-consent', style: 'display:flex;gap:9px;align-items:flex-start;margin:6px 0 12px;font-size:12px;line-height:1.55' },
+      h('label', { class: 'auth-consent', style: 'display:flex;gap:9px;align-items:flex-start;margin:6px 0 10px;font-size:12px;line-height:1.55' },
         consentEl,
-        h('span', {}, 'ยืนยันว่าได้แจ้งวัตถุประสงค์และได้รับความยินยอมจากลูกค้าในการเก็บและประมวลผลข้อมูลส่วนบุคคล (รวมข้อมูลสุขภาพซึ่งเป็นข้อมูลอ่อนไหวตาม PDPA มาตรา 26) แล้ว')),
+        h('span', {}, h('b', {}, '(บังคับ) '), 'ได้แจ้งวัตถุประสงค์ตามนโยบายความเป็นส่วนตัว และได้รับความยินยอมจากลูกค้าให้เก็บและใช้ข้อมูลส่วนบุคคลทั่วไป (ชื่อ ข้อมูลติดต่อ ข้อมูลการเงิน) เพื่อการวางแผนความคุ้มครองแล้ว')),
+      h('label', { class: 'auth-consent', style: 'display:flex;gap:9px;align-items:flex-start;margin:0 0 12px;font-size:12px;line-height:1.55' },
+        sensEl,
+        h('span', {}, '(เลือก) ลูกค้าให้ ', h('b', {}, 'ความยินยอมโดยชัดแจ้ง'), ' แยกต่างหาก ให้เก็บข้อมูลสุขภาพ (สถานะสุขภาพ การสูบบุหรี่ ข้อยกเว้น/เบี้ยเพิ่มจากการพิจารณารับประกัน สิทธิการรักษา) ซึ่งเป็นข้อมูลอ่อนไหวตาม PDPA มาตรา 26 แล้ว — ถ้าไม่ติ๊ก แนะนำให้เว้นช่องข้อมูลสุขภาพของลูกค้ารายนี้ไว้')),
       h('div', { style: 'display:flex;gap:8px;align-items:center' }, submit,
         h('button', { class: 'btn btn-secondary', onclick: () => opts.onCancel?.() }, 'ยกเลิก'), msg)));
 }
