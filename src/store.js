@@ -132,17 +132,50 @@ export async function deleteMyAccount() {
 
 /* ═══════════════ สมุดลูกค้า (Module B) ═══════════════ */
 
-const CLIENT_FIELDS = ['full_name', 'nickname', 'birth_date', 'sex', 'phone', 'line_id', 'occupation', 'marital_status', 'note'];
-const POLICY_FIELDS = ['kind', 'insurer', 'plan_name', 'sum_assured', 'premium', 'premium_freq', 'renewal_date', 'status', 'exclusions', 'note'];
+const CLIENT_FIELDS = ['full_name', 'nickname', 'birth_date', 'sex', 'phone', 'line_id', 'occupation', 'marital_status', 'note', 'referred_by', 'orphan'];
+const POLICY_FIELDS = [
+  'kind', 'insurer', 'plan_name', 'sum_assured', 'premium', 'premium_freq', 'renewal_date', 'status', 'exclusions', 'note',
+  'policy_no', 'parent_policy_id', 'health_room_daily', 'health_annual', 'has_copay', 'ci_sum',
+  'payment_method', 'start_date', 'paid_to_year', 'beneficiary',
+];
+const NUMERIC_FIELDS = new Set(['sum_assured', 'premium', 'health_room_daily', 'health_annual', 'ci_sum', 'paid_to_year']);
+const BOOL_FIELDS = new Set(['has_copay', 'orphan']);
 
 function pick(fields, src) {
   const out = {};
   for (const k of fields) {
     let v = src[k];
     if (v === '' || v === undefined) v = null;
-    if ((k === 'sum_assured' || k === 'premium') && v != null) { v = Number(v); if (!Number.isFinite(v)) v = null; }
+    if (BOOL_FIELDS.has(k)) { out[k] = v === true || v === 'true' || v === 'on'; continue; }
+    if (NUMERIC_FIELDS.has(k) && v != null) { v = Number(v); if (!Number.isFinite(v)) v = null; }
     out[k] = v;
   }
+  return out;
+}
+
+/**
+ * รวมความคุ้มครองที่ลูกค้าถืออยู่ (active) → ค่าฟอร์ม Protection Gap
+ * ทุนชีวิต/CI/PA รวมกัน · ค่าห้อง+เหมาจ่ายสุขภาพเอาค่าสูงสุด · แยกส่วนตัว/กลุ่ม
+ */
+export function coverageFromPolicies(policies = []) {
+  const out = {};
+  const add = (k, v) => { const n = Number(v); if (Number.isFinite(n) && n > 0) out[k] = (out[k] || 0) + n; };
+  const max = (k, v) => { const n = Number(v); if (Number.isFinite(n) && n > 0) out[k] = Math.max(out[k] || 0, n); };
+  for (const p of policies) {
+    if (p.status && p.status !== 'active') continue;
+    const grp = p.kind === 'group';
+    if (p.kind === 'life' || p.kind === 'unitlinked') add('existingLifeSum', p.sum_assured);
+    else if (p.kind === 'group') add('groupLifeSum', p.sum_assured);
+    if (p.kind === 'ci') add(grp ? 'groupCiSum' : 'existingCiSum', p.ci_sum || p.sum_assured);
+    else if (p.ci_sum) add(grp ? 'groupCiSum' : 'existingCiSum', p.ci_sum);
+    if (p.kind === 'pa') add('existingPaSum', p.sum_assured);
+    if (p.kind === 'health' || p.kind === 'group') {
+      max(grp ? 'groupHealthRoom' : 'existingHealthRoom', p.health_room_daily);
+      max(grp ? 'groupHealthAnnual' : 'existingHealthAnnual', p.health_annual);
+      if (!grp && p.has_copay) out.existingHealthCopay = true;
+    }
+  }
+  if (out.groupCiSum) out.groupHasCi = true;
   return out;
 }
 

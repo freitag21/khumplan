@@ -15,7 +15,7 @@ import {
   saveAnalysis, updateAnalysis, deleteAnalysis, loadMyAnalysis, loadAnalysisBySlug,
   listMyAnalyses, updateAgentProfile, monthStats, deleteMyAccount,
   listClients, getClient, createClient, setClientStage, updateClient, deleteClient,
-  addPolicy, updatePolicy, deletePolicy, linkAnalysis, listUnlinkedAnalyses, upcomingRenewals,
+  addPolicy, updatePolicy, deletePolicy, linkAnalysis, listUnlinkedAnalyses, upcomingRenewals, coverageFromPolicies,
   listReminders, createReminder, setReminderDone, deleteReminder, birthdaysThisMonth, resaleOpportunities,
 } from './store.js';
 
@@ -242,7 +242,7 @@ async function showClient(id) {
       onSetStage: (stage) => setClientStage(id, stage),
       onLinkAnalysis: (aid, cid) => linkAnalysis(aid, cid),
       onOpenAnalysis: (aid) => nav(`?edit=${aid}`),
-      onNewAnalysis: () => showForm(prefillFromClient(data.client), null, id),
+      onNewAnalysis: () => showForm({ ...prefillFromClient(data.client), ...coverageFromPolicies(data.policies) }, null, id),
     });
     root.innerHTML = '';
     root.append(topbar(), h('div', { class: 'page' }, node), footer());

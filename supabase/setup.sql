@@ -1,6 +1,6 @@
 -- คุ้มแพลน (KhumPlan) — SQL ตั้งค่าครบในไฟล์เดียว
 -- วางทั้งหมดนี้ใน Supabase Dashboard → SQL Editor → Run
--- (รวม migration 0001 + 0002 + 0003 + 0004 + 0005 · รันซ้ำได้ ปลอดภัย)
+-- (รวม migration 0001 + 0002 + 0003 + 0004 + 0005 + 0006 · รันซ้ำได้ ปลอดภัย)
 
 -- ═══════════ ตาราง agents (โปรไฟล์ตัวแทน) ═══════════
 create table if not exists public.agents (
@@ -229,3 +229,25 @@ drop trigger if exists reminders_set_updated_at on public.reminders;
 create trigger reminders_set_updated_at
   before update on public.reminders
   for each row execute function public.set_updated_at();
+
+-- ═══════════ 0006 · รายละเอียดกรมธรรม์ + สัญญาเพิ่มเติม + ฟิลด์บริการ ═══════════
+
+alter table public.policies
+  add column if not exists policy_no         text,
+  add column if not exists parent_policy_id  uuid references public.policies (id) on delete cascade,
+  add column if not exists health_room_daily numeric,
+  add column if not exists health_annual     numeric,
+  add column if not exists has_copay         boolean,
+  add column if not exists ci_sum            numeric,
+  add column if not exists payment_method    text
+    check (payment_method in ('self', 'bank', 'card', 'payroll', 'other')),
+  add column if not exists start_date        date,
+  add column if not exists paid_to_year      int,
+  add column if not exists beneficiary       text;
+
+create index if not exists policies_parent_idx on public.policies (parent_policy_id)
+  where parent_policy_id is not null;
+
+alter table public.clients
+  add column if not exists referred_by text,
+  add column if not exists orphan      boolean not null default false;

@@ -819,7 +819,16 @@ ul.tax-note li { margin: 0; }
 .pol-meta { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--ap-ink2); margin-top: 7px; }
 .pol-excl { font-size: 12px; color: var(--ap-ink); margin-top: 7px; padding: 6px 9px; background: var(--ap-warn-s); border-radius: 6px; line-height: 1.5; }
 .pol-note { font-size: 12px; margin-top: 6px; line-height: 1.5; }
-.pol-form { display: flex; flex-direction: column; gap: 6px; }
+.pol-form { display: flex; flex-direction: column; gap: 10px; }
+.pol-rider { margin: 8px 0 0 14px; padding-left: 12px; border-left: 2px solid var(--ap-line); }
+.pol-check { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ap-ink2); grid-column: 1 / -1; }
+.pol-check input { width: 15px; height: 15px; flex: none; }
+.pol-add-rider {
+  margin-top: 9px; border: 1px dashed var(--ap-line); background: transparent; color: var(--ap-ink2);
+  font-size: 11.5px; padding: 4px 9px; border-radius: 6px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.pol-add-rider:hover { color: var(--ap-ink); border-color: var(--ap-ink2); }
 
 .link-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--ap-line); }
 .link-row:last-of-type { border-bottom: none; }

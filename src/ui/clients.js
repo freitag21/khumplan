@@ -11,6 +11,9 @@ const STATUS_LABEL = {
 };
 const FREQ_LABEL = { year: 'รายปี', half: 'ราย 6 เดือน', quarter: 'รายไตรมาส', month: 'รายเดือน', single: 'ชำระครั้งเดียว' };
 const MARITAL_LABEL = { single: 'โสด', married: 'สมรส', divorced: 'หย่า', widowed: 'หม้าย', single_parent: 'เลี้ยงบุตรคนเดียว' };
+const PAY_LABEL = { self: 'จ่ายเอง', bank: 'หักบัญชีธนาคาร', card: 'หักบัตรเครดิต', payroll: 'หักเงินเดือน', other: 'อื่น ๆ' };
+/* หมวดที่วัดความคุ้มครองด้วยค่าห้อง/เหมาจ่าย ไม่ใช่ "ทุน" */
+const HEALTH_KINDS = new Set(['health', 'group']);
 
 const THMONTH = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const g = (v) => (Number.isFinite(Number(v)) ? Math.round(Number(v)).toLocaleString('th-TH') : null);
@@ -128,14 +131,18 @@ export function renderClientDetail(opts = {}) {
     line_id: input(client.line_id, { placeholder: 'LINE ID ลูกค้า' }),
     occupation: input(client.occupation, { placeholder: 'อาชีพ' }),
     marital_status: select(client.marital_status, [['', '—'], ...Object.entries(MARITAL_LABEL)]),
+    referred_by: input(client.referred_by, { placeholder: 'ใครแนะนำลูกค้าคนนี้' }),
     note: h('textarea', { class: 'input', rows: '3', placeholder: 'บันทึกเพิ่มเติม — ความต้องการ, จังหวะติดตาม, ประวัติการคุย' }, client.note || ''),
   };
+  const orphanEl = h('input', { type: 'checkbox', ...(client.orphan ? { checked: '' } : {}) });
   const pMsg = h('div', { class: 'auth-fine' });
   const saveBtn = h('button', { class: 'btn btn-primary ap-fill', style: 'justify-content:center',
     onclick: async () => {
       saveBtn.disabled = true; pMsg.textContent = '';
       try {
-        await opts.onSaveClient?.(Object.fromEntries(Object.entries(f).map(([k, el]) => [k, el.value.trim()])));
+        const vals = Object.fromEntries(Object.entries(f).map(([k, el]) => [k, el.value.trim()]));
+        vals.orphan = orphanEl.checked;
+        await opts.onSaveClient?.(vals);
         pMsg.style.color = 'var(--ap-ok)'; pMsg.textContent = 'บันทึกแล้ว';
       } catch (e) { pMsg.style.color = 'var(--ap-bad)'; pMsg.textContent = 'บันทึกไม่สำเร็จ: ' + e.message; }
       saveBtn.disabled = false;
@@ -146,22 +153,44 @@ export function renderClientDetail(opts = {}) {
       field('ชื่อ-นามสกุล', f.full_name), field('ชื่อเล่น', f.nickname),
       field('วันเกิด', f.birth_date), field('เพศ', f.sex),
       field('เบอร์โทร', f.phone), field('LINE ID', f.line_id),
-      field('อาชีพ', f.occupation), field('สถานภาพ', f.marital_status)),
+      field('อาชีพ', f.occupation), field('สถานภาพ', f.marital_status),
+      field('ผู้แนะนำ', f.referred_by)),
+    h('label', { class: 'pol-check', style: 'margin:2px 0 10px' }, orphanEl, h('span', {}, 'เคสรับดูแลต่อ (orphan — ไม่ใช่ลูกค้าที่เราขายเอง)')),
     field('บันทึก', f.note),
     h('div', { style: 'display:flex;gap:8px;align-items:center' }, saveBtn, pMsg));
 
   /* ---- กรมธรรม์ที่ถืออยู่ ---- */
   const polWrap = h('div', { class: 'pol-list' });
+  const mainPolicies = () => policies.filter((p) => !p.parent_policy_id);
+  const ridersOf = (id) => policies.filter((p) => p.parent_policy_id === id);
+
   function renderPolicies() {
     polWrap.innerHTML = '';
-    if (!policies.length) {
+    const mains = mainPolicies();
+    if (!mains.length) {
       polWrap.append(h('div', { class: 'dash-empty', style: 'padding:16px' }, 'ยังไม่ได้บันทึกกรมธรรม์ของลูกค้าคนนี้'));
       return;
     }
-    policies.forEach((p) => polWrap.append(policyRow(p)));
+    mains.forEach((p) => polWrap.append(policyRow(p)));
   }
-  function policyRow(p) {
-    const wrap = h('div', { class: 'pol-card' });
+
+  function covLine(p) {
+    const bits = [];
+    if (HEALTH_KINDS.has(p.kind)) {
+      if (p.health_room_daily) bits.push(['ค่าห้อง/วัน ', g(p.health_room_daily)]);
+      if (p.health_annual) bits.push(['เหมาจ่าย/ปี ', g(p.health_annual)]);
+      if (p.has_copay) bits.push(['มี copay']);
+    } else if (p.kind === 'ci') {
+      if (p.ci_sum || p.sum_assured) bits.push(['ทุน CI ', g(p.ci_sum || p.sum_assured)]);
+    } else if (p.sum_assured) {
+      bits.push(['ทุน ', g(p.sum_assured)]);
+    }
+    if (p.ci_sum && p.kind !== 'ci') bits.push(['+ CI ', g(p.ci_sum)]);
+    return bits;
+  }
+
+  function policyRow(p, isRider = false) {
+    const wrap = h('div', { class: isRider ? 'pol-rider' : 'pol-card' });
     const showView = () => {
       wrap.innerHTML = '';
       const prem = g(p.premium);
@@ -169,20 +198,30 @@ export function renderClientDetail(opts = {}) {
         h('div', { class: 'pol-head' },
           h('span', { class: 'tag p-info' }, KIND_LABEL[p.kind] || p.kind),
           h('span', { class: 'pol-title' }, [p.insurer, p.plan_name].filter(Boolean).join(' — ') || '(ไม่ระบุแบบ)'),
+          p.policy_no ? h('span', { class: 'muted', style: 'font-size:11px' }, `#${p.policy_no}`) : null,
           p.status !== 'active' ? h('span', { class: 'tag p-warn' }, STATUS_LABEL[p.status] || p.status) : null,
           h('div', { style: 'flex:1' }),
           h('button', { class: 'icon-btn', title: 'แก้ไข', onclick: showEdit }, icon('M3 11l6-6 2 2-6 6H3z', { size: 13, stroke: 'var(--ap-ink2)' })),
           h('button', { class: 'icon-btn', title: 'ลบ', onclick: async () => {
-            if (!confirm('ลบกรมธรรม์นี้?')) return;
-            try { await opts.onDeletePolicy?.(p.id); policies = policies.filter((x) => x.id !== p.id); renderPolicies(); }
+            if (!confirm(isRider ? 'ลบสัญญาเพิ่มเติมนี้?' : 'ลบกรมธรรม์นี้? (สัญญาเพิ่มเติมจะถูกลบด้วย)')) return;
+            try { await opts.onDeletePolicy?.(p.id); policies = policies.filter((x) => x.id !== p.id && x.parent_policy_id !== p.id); renderPolicies(); }
             catch (e) { alert('ลบไม่สำเร็จ: ' + e.message); }
           } }, icon(ICONS.minus, { size: 13, stroke: 'var(--ap-bad)' }))),
         h('div', { class: 'pol-meta' },
-          p.sum_assured ? h('span', {}, 'ทุน ', h('b', { class: 'n' }, g(p.sum_assured))) : null,
+          ...covLine(p).map(([a, b]) => h('span', {}, a, b ? h('b', { class: 'n' }, b) : null)),
           prem ? h('span', {}, 'เบี้ย ', h('b', { class: 'n' }, prem), ` / ${FREQ_LABEL[p.premium_freq] || p.premium_freq}`) : null,
-          p.renewal_date ? h('span', {}, 'ครบกำหนดชำระ ', h('b', {}, thDate(p.renewal_date))) : null),
+          p.payment_method ? h('span', {}, PAY_LABEL[p.payment_method] || p.payment_method) : null,
+          p.renewal_date ? h('span', {}, 'ครบกำหนดชำระ ', h('b', {}, thDate(p.renewal_date))) : null,
+          p.paid_to_year ? h('span', {}, `ชำระถึงปี ${p.paid_to_year}`) : null),
+        p.beneficiary ? h('div', { class: 'pol-note muted' }, 'ผู้รับประโยชน์: ' + p.beneficiary) : null,
         p.exclusions ? h('div', { class: 'pol-excl' }, h('b', {}, 'ข้อยกเว้น/เบี้ยเพิ่ม: '), p.exclusions) : null,
         p.note ? h('div', { class: 'pol-note muted' }, p.note) : null);
+      if (!isRider) {
+        const riders = ridersOf(p.id);
+        riders.forEach((r) => wrap.append(policyRow(r, true)));
+        wrap.append(h('button', { class: 'pol-add-rider', onclick: () => openRiderForm(p.id) },
+          icon(ICONS.plus, { size: 10, width: 1.7 }), 'สัญญาเพิ่มเติม'));
+      }
     };
     const showEdit = () => { wrap.innerHTML = ''; wrap.append(policyForm(p, {
       onDone: (saved) => { Object.assign(p, saved); showView(); },
@@ -192,36 +231,85 @@ export function renderClientDetail(opts = {}) {
     return wrap;
   }
 
+  function openRiderForm(parentId) {
+    if (polWrap.querySelector('.pol-form.new')) return;
+    const form = policyForm({ parent_policy_id: parentId, kind: 'ci' }, {
+      onDone: (saved) => { if (saved) policies.push(saved); renderPolicies(); },
+      onCancel: () => renderPolicies(),
+    });
+    form.classList.add('new');
+    polWrap.append(h('div', { class: 'pol-rider' }, form));
+  }
+
   function policyForm(p, { onDone, onCancel }) {
     const isNew = !p.id;
+    const isRider = !!p.parent_policy_id;
+    const kindSel = select(p.kind || (isRider ? 'ci' : 'life'), Object.entries(KIND_LABEL));
     const pf = {
-      kind: select(p.kind || 'life', Object.entries(KIND_LABEL)),
+      kind: kindSel,
       status: select(p.status || 'active', Object.entries(STATUS_LABEL)),
       insurer: input(p.insurer, { placeholder: 'บริษัทประกัน' }),
-      plan_name: input(p.plan_name, { placeholder: 'ชื่อแบบประกัน' }),
+      plan_name: input(p.plan_name, { placeholder: isRider ? 'ชื่อสัญญาเพิ่มเติม' : 'ชื่อแบบประกัน' }),
+      policy_no: input(p.policy_no, { placeholder: 'เลขที่กรมธรรม์' }),
       sum_assured: input(p.sum_assured, { type: 'number', inputmode: 'numeric', placeholder: 'ทุนประกัน (บาท)' }),
+      health_room_daily: input(p.health_room_daily, { type: 'number', inputmode: 'numeric', placeholder: 'ค่าห้อง/วัน (บาท)' }),
+      health_annual: input(p.health_annual, { type: 'number', inputmode: 'numeric', placeholder: 'วงเงินเหมาจ่าย/ปี (บาท)' }),
+      ci_sum: input(p.ci_sum, { type: 'number', inputmode: 'numeric', placeholder: 'ทุนโรคร้ายแรง (บาท)' }),
       premium: input(p.premium, { type: 'number', inputmode: 'numeric', placeholder: 'เบี้ย (บาท)' }),
       premium_freq: select(p.premium_freq || 'year', Object.entries(FREQ_LABEL)),
+      payment_method: select(p.payment_method || '', [['', '—'], ...Object.entries(PAY_LABEL)]),
       renewal_date: input(p.renewal_date, { type: 'date' }),
+      start_date: input(p.start_date, { type: 'date' }),
+      paid_to_year: input(p.paid_to_year, { type: 'number', inputmode: 'numeric', placeholder: 'พ.ศ.' }),
+      beneficiary: input(p.beneficiary, { placeholder: 'ชื่อ + ความสัมพันธ์' }),
       exclusions: h('textarea', { class: 'input', rows: '2', placeholder: 'ข้อยกเว้น / เบี้ยเพิ่ม (loading) / เงื่อนไขจากการพิจารณารับประกัน' }, p.exclusions || ''),
       note: input(p.note, { placeholder: 'หมายเหตุ' }),
     };
+    const copayEl = h('input', { type: 'checkbox', ...(p.has_copay ? { checked: '' } : {}) });
+
+    const covFields = h('div', { class: 'field-grid two' });
+    function renderCov() {
+      covFields.innerHTML = '';
+      const k = kindSel.value;
+      if (HEALTH_KINDS.has(k)) {
+        covFields.append(field('ค่าห้อง/วัน', pf.health_room_daily), field('วงเงินเหมาจ่าย/ปี', pf.health_annual));
+        covFields.append(h('label', { class: 'pol-check' }, copayEl, h('span', {}, 'มีความรับผิดส่วนแรก (copay / deductible)')));
+      } else if (k === 'ci') {
+        covFields.append(field('ทุนโรคร้ายแรง', pf.ci_sum));
+      } else {
+        covFields.append(field('ทุนประกัน', pf.sum_assured));
+        if (!isRider) covFields.append(field('ทุนโรคร้ายแรงแนบท้าย (ถ้ามี)', pf.ci_sum));
+      }
+    }
+    renderCov();
+    kindSel.addEventListener('change', renderCov);
+
     const msg = h('div', { class: 'auth-fine' });
     const save = h('button', { class: 'btn btn-primary ap-fill', style: 'justify-content:center',
       onclick: async () => {
         save.disabled = true; msg.textContent = '';
         const vals = Object.fromEntries(Object.entries(pf).map(([k, el]) => [k, el.value]));
+        vals.has_copay = copayEl.checked;
+        if (p.parent_policy_id) vals.parent_policy_id = p.parent_policy_id;
         try {
           const saved = isNew ? await opts.onAddPolicy?.(vals) : await opts.onUpdatePolicy?.(p.id, vals);
           onDone?.(saved);
         } catch (e) { msg.style.color = 'var(--ap-bad)'; msg.textContent = 'บันทึกไม่สำเร็จ: ' + e.message; save.disabled = false; }
-      } }, isNew ? 'เพิ่มกรมธรรม์' : 'บันทึก');
+      } }, isNew ? (isRider ? 'เพิ่มสัญญาเพิ่มเติม' : 'เพิ่มกรมธรรม์') : 'บันทึก');
+
     return h('div', { class: 'pol-form' },
+      isRider ? h('div', { class: 'muted', style: 'font-size:11.5px' }, 'สัญญาเพิ่มเติม (แนบท้ายสัญญาหลัก)') : null,
       h('div', { class: 'field-grid two' },
         field('ประเภท', pf.kind), field('สถานะ', pf.status),
-        field('บริษัทประกัน', pf.insurer), field('ชื่อแบบประกัน', pf.plan_name),
-        field('ทุนประกัน', pf.sum_assured), field('เบี้ย', pf.premium),
-        field('งวดชำระ', pf.premium_freq), field('วันครบกำหนดชำระถัดไป', pf.renewal_date)),
+        field('บริษัทประกัน', pf.insurer), field('ชื่อแบบ', pf.plan_name),
+        isRider ? null : field('เลขที่กรมธรรม์', pf.policy_no)),
+      covFields,
+      h('div', { class: 'field-grid two' },
+        field('เบี้ย', pf.premium), field('งวดชำระ', pf.premium_freq),
+        field('ช่องทางชำระเบี้ย', pf.payment_method), field('วันครบกำหนดชำระถัดไป', pf.renewal_date),
+        isRider ? null : field('วันเริ่มสัญญา', pf.start_date),
+        isRider ? null : field('ชำระเบี้ยถึงปี (พ.ศ.)', pf.paid_to_year)),
+      isRider ? null : field('ผู้รับประโยชน์', pf.beneficiary),
       field('ข้อยกเว้น / เบี้ยเพิ่ม', pf.exclusions),
       field('หมายเหตุ', pf.note),
       h('div', { style: 'display:flex;gap:8px;align-items:center' },
