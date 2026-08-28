@@ -41,8 +41,15 @@
 - MANHA nurture box แสดงทุก readout รวม "go" · บังคับกรอก "จะกลับไปคุยเรื่องอะไร" · ช่วงเวลาแนะนำตามเหตุผล
 - สมุดลูกค้า: ชิปกรอง ลูกค้า/ผู้มุ่งหวัง + เรียงตามชื่อ/อัปเดตล่าสุด
 
-migration 0006 + 0007 รันแล้ว (Claude รันผ่าน Chrome · verified: policies 25 cols, clients 18, interactions 7). ทั้ง 3 รอบ push + deploy แล้ว
-**ยังไม่ทำจากรีวิว Win:** แทน prompt()/confirm() ด้วยฟอร์มในหน้า · MANHA prospect แยก opt-in ข้อมูลสุขภาพ · "ลบลูกค้า" default ลบผลวิเคราะห์ด้วย · แยกทุพพลภาพจาก PA ใน engine · ปิดธง resale · แดชบอร์ดหัวหน้าทีม + house assumptions + นโยบาย "ตัวแทนออกจากทีม" (เฟส Team) · ทนายตรวจ Terms/Privacy
+**รอบ 4 — ฟอร์ม consent ในหน้า + opt-in PDPA + ปิดธง resale** (commit 89592ee, migration 0008):
+- เพิ่มลูกค้าใหม่เป็นฟอร์มในหน้า `?view=client-new` (แทน prompt/confirm) — ชื่อ/ชื่อเล่น/เบอร์/LINE/สถานะ + ติ๊กยืนยัน consent (บังคับ) → เก็บ `clients.consent_version` = POLICY_VERSION (migration 0008)
+- MANHA "บันทึกผู้มุ่งหวัง": สถานะสุขภาพจากการคัดกรองเป็น **opt-in checkbox (ปิดเป็นค่าเริ่มต้น)** — reminder เก็บแค่เหตุผล + สรุปที่ไม่มีข้อมูลสุขภาพ เว้นแต่ติ๊ก
+- "ลบลูกค้า" เป็นแผงในหน้า + checkbox "ลบผลวิเคราะห์ที่ผูกไว้ด้วย" (ติ๊กไว้เป็นค่าเริ่มต้น) → `deleteClient(id, {alsoAnalyses})` ลบ analyses จริง
+- งานติดตาม: ปุ่ม "ไม่สนใจ" บนธง resale → `dismissResale()` เขียน reminder แบบ done กันธงเด้ง ~6 เดือน
+- งานติดตาม: section ใหม่ "ผู้มุ่งหวังที่เงียบเกิน 2 ปี" (`staleProspects` — สร้าง > 24 เดือน ไม่มีการติดต่อ ไม่มีงานค้าง) → เตือนขอ consent ใหม่หรือลบ (PDPA)
+
+migration 0006 + 0007 + 0008 รันแล้ว (Claude รันผ่าน Chrome · verified: policies 25 cols, clients 19, interactions 7). ทั้ง 4 รอบ push + deploy แล้ว
+**ยังไม่ทำจากรีวิว Win:** แยกทุพพลภาพจาก PA ให้เข้า priorityOrder (แตะ engine — ต้องให้ Win สเปคสูตร disability need ก่อน) · **เฟส Team**: แดชบอร์ดหัวหน้าทีม v1 (aggregate เท่านั้น) + แชร์เคสรายเคสเพื่อโค้ช + house assumptions + นโยบาย "ตัวแทนออกจากทีม → export/downgrade" · ทนายตรวจ Terms/Privacy ก่อนเก็บเงิน
 
 ## 2026-08-28 — Module B core เริ่ม: สมุดลูกค้า (client book)
 
