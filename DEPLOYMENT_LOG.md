@@ -16,7 +16,8 @@
 - หน้าสมุด: รายชื่อ + ค้นหา + การ์ด "กรมธรรม์ใกล้ครบกำหนดชำระ 90 วัน" (ฐานของเตือน LINE) · หน้าลูกค้า: โปรไฟล์ + กรมธรรม์ (เพิ่ม/แก้/ลบ inline) + ผูก/ปลดผูกผลวิเคราะห์
 - เพิ่มลูกค้าใหม่ = prompt ชื่อ + confirm PDPA consent ก่อนบันทึก
 - ทดสอบ: build ผ่าน, 27 tests, ไม่มี console error, render list/detail/inline-forms ผ่าน (mock data), มือถือ 375px คอลัมน์เดียว
-- **ยังไม่ deploy** — รอ user รัน migration 0004 ก่อน push
+- ✅ **migration 0004 รันแล้ว** (Claude รันผ่าน Chrome/Supabase SQL Editor ตามที่ user สั่ง) — verify: clients 15 cols, policies 15 cols, analyses.client_id เพิ่มแล้ว
+- ✅ **push + deploy** commit `ce8297e` → Vercel (auto)
 - ยังไม่ทำใน Module B: เตือน LINE (ต้องมี bot), ธง resale อัตโนมัติ, nurture list จาก MANHA
 
 ## 2026-08-28 — Landing page (ขายก่อน signup)
