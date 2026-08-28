@@ -24,7 +24,8 @@ export const EMAIL_ENABLED = true;
  * ช่องทางติดต่อ — แก้ค่าตรงนี้ที่เดียว ช่องไหนเว้นว่าง (null) จะถูกซ่อน
  */
 export const CONTACT = {
-  email: 'sophon.ps21@gmail.com',
+  email: 'support@khumplan.com', // Cloudflare Email Routing → forward เข้ากล่องจริง
+
   lineId: null,       // เช่น '@khumplan' — เว้นว่างไว้จนกว่าจะเปิด LINE OA
   lineUrl: null,      // เช่น 'https://lin.ee/xxxxxxx'
   facebookUrl: null,  // เช่น 'https://facebook.com/khumplan'
